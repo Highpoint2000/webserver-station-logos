@@ -25,6 +25,7 @@ For missing or incorrect logos, please use the integrated Google search function
 - Reduction of query values
 - Stability and performance improvements
 - Bug fixing
+- Countrylist (ITU codes) were moved to the server
 
 ### version v3.12a:
 - program name logo query in capital letters
