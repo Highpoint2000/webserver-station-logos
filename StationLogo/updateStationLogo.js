@@ -2,7 +2,8 @@
 ///                                                                                ///
 ///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2)                         ///
 ///                                                                                /// 
-///  Thanks to Ivan_FL, Adam W, mc_popa & noobish for the ideas and design!  	   ///
+///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
+///  design!  	                                                                   ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
