@@ -20,6 +20,12 @@ For missing or incorrect logos, please use the integrated Google search function
 
 ## History:
 
+### version v3.2:
+- Switching the query process to JSON
+- Reduction of query values
+- Stability and performance improvements
+- Bug fixing
+
 ### version v3.12a:
 - program name logo query in capital letters
 - itu code additions
