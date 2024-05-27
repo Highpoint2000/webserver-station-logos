@@ -1,19 +1,25 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2)                         ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2a)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
-///  design!  	                                                                   ///
+///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                          last update: 21.05.24 ///
+///                                                          last update: 27.05.24 ///
 //////////////////////////////////////////////////////////////////////////////////////
 
+// Enable or disable onlineradiobox search if no local or server logo is found.
+const enableOnlineradioboxSearch = true;
 
-//////////////// Inject Logo Code for Desktop Devices ////////////////////////
+// Enable or disable updating the logo when the PI code changes on the current frequency.
+// For Airspy and other SDR receivers, this function should be set to false.
+const updateLogoOnPiCodeChange = true;
 
-// Define the HTML code as a string for Logo Container
+//////////////// Insert logo code for desktop devices ////////////////////////
+
+// Define the HTML code as a string for the logo container
 var LogoContainerHtml = '<div style="width: 5%;"></div> <!-- Spacer -->' +
     '<div class="panel-30 m-0 hide-phone" style="width: 48%" >' +
     '    <div id="logo-container-desktop" style="width: auto; height: 60px; display: flex; justify-content: center; align-items: center; margin: auto;">' +
@@ -23,34 +29,34 @@ var LogoContainerHtml = '<div style="width: 5%;"></div> <!-- Spacer -->' +
 // Insert the new HTML code after the named <div>
 document.getElementById("ps-container").insertAdjacentHTML('afterend', LogoContainerHtml);
 
-// The new HTML for the div element with the Play / Stop button
+// The new HTML code for the <div> element with the play / stop button
 var buttonHTML = '<div class="panel-10 no-bg h-100 m-0 m-right-20 hide-phone" style="width: 80px;margin-right: 20px !important;">' +
                      '<button class="playbutton" aria-label="Play / Stop Button"><i class="fa-solid fa-play fa-lg"></i></button>' +
                   '</div>';
-// Select the original div element
+// Select the original <div> element
 var originalDiv = document.querySelector('.panel-10');
-// Create a new div element
+// Create a new <div> element
 var buttonDiv = document.createElement('div');
 buttonDiv.innerHTML = buttonHTML;
-// Replace the original div element with the new HTML
+// Replace the original <div> element with the new HTML
 originalDiv.outerHTML = buttonDiv.outerHTML;
 
-//////////////// Inject Logo Code for Mobile Devices ////////////////////////
+//////////////// Insert logo code for mobile devices ////////////////////////
 
 // Select the existing <div> element with the ID "flags-container-phone"
 var flagsContainerPhone = document.getElementById('flags-container-phone');
 
-// Create the new HTML for the replacement
+// Create the new HTML code for the replacement
 var MobileHTML = `
     <div id="flags-container-phone" class="panel-33">
-        <h2 class="show-phone">	
+        <h2 class="show-phone">    
             <div id="logo-container-phone" style="width: auto; height: 70px; display: flex; justify-content: center; align-items: center; margin: auto;">                 
-                <img id="station-logo-phone" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-phone" style="max-width: 160px; padding: 1px 2px; max-height: 100%; margin-top: 0px; display: block;">	
+                <img id="station-logo-phone" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-phone" style="max-width: 160px; padding: 1px 2px; max-height: 100%; margin-top: 0px; display: block;">    
             </div>
             <br>
             <div class="data-pty text-color-default"></div>
         </h2>
-		<h3 style="margin-top:0;margin-bottom:0;" class="color-4 flex-center">
+        <h3 style="margin-top:0;margin-bottom:0;" class="color-4 flex-center">
                 <span class="data-tp">TP</span>
                 <span style="margin-left: 15px;" class="data-ta">TA</span>
                 <div style="display:inline-block">
@@ -61,7 +67,7 @@ var MobileHTML = `
                     <span class="overlay tooltip" data-tooltip="Stereo / Mono toggle. <br><strong>Click to toggle."></span>
                 </span>
                 <span style="margin-left: 15px;" class="data-ms">MS</span>
-		</h3>
+        </h3>
     </div>
 `;
 
@@ -73,7 +79,7 @@ const localpath = '/logos/';
 const defaultServerPath = serverpath + 'default-logo.png';
 const emptyServerPath = serverpath + 'empty-logo.png';
 
-// Determine the logo image element based on device type
+// Determine the logo image element based on the device type
 var logoImage;
 if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
     logoImage = $('#station-logo-phone');
@@ -81,8 +87,14 @@ if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
     logoImage = $('#station-logo');
 }
 
-function updateStationLogo(piCode, ituCode, Program) {
+let currentFrequenz = null;
+let logoLoadedForCurrentFrequenz = false;
+let logoLoadingInProgress = false;
+
+function updateStationLogo(piCode, ituCode, Program, frequenz) {
     const tooltipContainer = $('.panel-30');
+
+    if (logoLoadingInProgress) return;
 
     let oldPiCode = logoImage.attr('data-picode');
     let oldItuCode = logoImage.attr('data-itucode');
@@ -95,10 +107,19 @@ function updateStationLogo(piCode, ituCode, Program) {
         ituCode = '?';
     }
 
-    if (piCode !== oldPiCode || ituCode !== oldItuCode || Program !== oldProgram) {
+    // Check if the frequency has changed
+    if (frequenz !== currentFrequenz) {
+        currentFrequenz = frequenz;
+        logoLoadedForCurrentFrequenz = false; // Reset variable on frequency change
+    }
+
+    // Only load logo if the frequency has changed and no logo has been loaded for the current frequency
+    if (!logoLoadedForCurrentFrequenz || (updateLogoOnPiCodeChange && (piCode !== oldPiCode || ituCode !== oldItuCode || Program !== oldProgram))) {
+        logoLoadingInProgress = true;
         logoImage.attr('data-picode', piCode);
         logoImage.attr('data-itucode', ituCode);
         logoImage.attr('data-Program', Program);
+        logoImage.attr('data-frequenz', frequenz);
 
         let formattedProgram = Program.toUpperCase().replace(/\s+/g, '');
 
@@ -121,6 +142,7 @@ function updateStationLogo(piCode, ituCode, Program) {
             function checkNext(index) {
                 if (index >= paths.length) {
                     if (onFailure) onFailure();
+                    logoLoadingInProgress = false;
                     return;
                 }
 
@@ -128,41 +150,54 @@ function updateStationLogo(piCode, ituCode, Program) {
                     type: "HEAD",
                     url: paths[index],
                     success: function() {
-                        logoImage.attr('src', paths[index]).attr('alt', `Logo for station ${piCode}`).css('display', 'block').css('cursor', 'pointer');
+                        logoImage.attr('src', paths[index]).attr('alt', `Logo for station ${piCode}`).css('display', 'block');
                         console.log("Logo found: " + paths[index]);
-						logoImage.css('cursor', 'default');
                         if (onSuccess) onSuccess();
                         if (triggerLogoSearch && Program !== oldProgram) {
                             LogoSearch(piCode, ituCode, Program);
                         }
+                        logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded
+                        logoLoadingInProgress = false;
                     },
                     error: function() {
                         checkNext(index + 1);
                     }
                 });
             }
-
             checkNext(0);
         }
 
-        // Check local paths first
-        checkPaths(localPaths, null, function() {
-            // Only check remote paths if both piCode and ituCode are valid
-            if (piCode !== '?' && ituCode !== '?') {
-                checkPaths(remotePaths, null, function() {
-                    // If no logo found at all, set default logo
+        if (piCode !== '?') {
+            checkPaths(localPaths, null, function() {
+                // Only check remote paths if both piCode and ituCode are valid
+                if (piCode !== '?' && ituCode !== '?') {
+                    checkPaths(remotePaths, null, function() {
+                        // If no logo is found, set default logo
+                        logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
+                        tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
+                        logoImage.css('cursor', 'default');
+
+                        // If no logo is found, perform the Online Radio Box search
+                        if (enableOnlineradioboxSearch) {
+                            OnlineradioboxSearch(Program, ituCode, piCode);
+                            logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded
+                        }
+                        logoLoadingInProgress = false;
+                    }, true);
+                } else {
                     logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-					tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
-					logoImage.css('cursor', 'default');
-					// No logo found, perform the online radiobox search
-					OnlineradioboxSearch(Program, ituCode, piCode);
-                }, true);
-            } else {
-                logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-				tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
-				logoImage.css('cursor', 'default');
-            }
-        }, false);
+                    tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
+                    logoImage.css('cursor', 'default');
+                    logoLoadingInProgress = false;
+                }
+            }, false);
+        } else {
+            // If piCode is '?', set default logo
+            logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
+            tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
+            logoImage.css('cursor', 'default');
+            logoLoadingInProgress = false;
+        }
     }
 }
 
@@ -170,17 +205,18 @@ function waitForServer() {
     if (typeof socket !== "undefined") {
         window.socket.addEventListener("message", (event) => {
             let parsedData = JSON.parse(event.data);
-            let piCode = parsedData.pi;
-            let ituCode = parsedData.txInfo.itu;
+            let piCode = parsedData.pi.toUpperCase();
+            let ituCode = parsedData.txInfo.itu.toUpperCase();
             let Program = parsedData.txInfo.station.replace(/%/g, '%25');
-            updateStationLogo(piCode, ituCode, Program);
+            let frequenz = parsedData.freq;
+            updateStationLogo(piCode, ituCode, Program, frequenz);
         });
     } else {
         setTimeout(waitForServer, 250);
     }
 }
 
-// Call the waitForServer to start waiting for socket to be defined
+// Call waitForServer to wait for the socket definition
 waitForServer();
 
 function LogoSearch(piCode, ituCode, Program) {
@@ -188,34 +224,38 @@ function LogoSearch(piCode, ituCode, Program) {
     const currentStation = Program;
     const currentituCode = ituCode;
     const tooltipContainer = $('.panel-30');
-    tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
-	
 
     // Debugging information
     console.log("currentituCode:", currentituCode);
     console.log("currentStation:", currentStation);
 
-    // If piCode, ituCode, and Program are present, activate these commands
+    // If piCode, ituCode, and Program are present, enable these commands
     if (currentituCode !== '' && currentStation !== '') {
-        const countryName = getCountryNameByItuCode(ituCode); // Retrieve country name for the ITU code
-        const ituCodeCurrentStation = `${currentStation} ${countryName}`; // Add country name to currentStation
+        const countryName = getCountryNameByItuCode(ituCode); // Retrieve the country name for the ITU code
+        const ituCodeCurrentStation = `${currentStation} ${countryName}`; // Add the country name to the current station
         const searchQuery = `${ituCodeCurrentStation} filetype:png OR filetype:svg Radio&tbs=sbd:1&udm=2`;
-        console.log("Search Query:", searchQuery);
+        console.log("Search query:", searchQuery);
         tooltipContainer.css('background-color', 'var(--color-2)').off('click').on('click', () => {
             console.log('Opening URL:', 'https://www.google.com/search?q=' + searchQuery);
             window.open('https://www.google.com/search?q=' + searchQuery, '_blank');
         });
-		logoImage.css('cursor', 'pointer');
+
+        // Set the cursor to pointer
+        logoImage.css('cursor', 'pointer');
+        logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded
+    } else {
+        // Set the cursor to auto if no valid search query is formed
+        logoImage.css('cursor', 'auto');
     }
 }
 
-// Function to query the country name using the ITU code
+// Function to get the country name by ITU code
 function getCountryNameByItuCode(ituCode) {
     const country = countryList.find(item => item.itu_code === ituCode.toUpperCase());
     return country ? country.country : "Country not found";
 }
 
-// Function to compare the current Program with the image titles and select the most similar image
+// Function to compare the current program with image titles and select the most similar image
 async function compareAndSelectImage(currentStation, imgSrcElements) {
     let minDistance = Infinity;
     let selectedImgSrc = null;
@@ -225,7 +265,7 @@ async function compareAndSelectImage(currentStation, imgSrcElements) {
         // Extract the title of the image
         const title = imgSrcElement.getAttribute('title');
 
-        // Calculate the Levenshtein distance between the current Program and the image title
+        // Calculate the Levenshtein distance between the current program and the image title
         const distance = Math.abs(currentStation.toLowerCase().localeCompare(title.toLowerCase()));
 
         // Update the selected image URL if the distance is smaller than the current minimum distance
@@ -271,19 +311,19 @@ async function parsePage(url, Program_original, ituCode, piCode) {
         const selectedImgSrc = await compareAndSelectImage(Program_original, imgSrcElements);
 
         if (selectedImgSrc) {
-            console.log('Die ausgewählte Bildquelle ist:', selectedImgSrc);
+            console.log('Selected image source:', selectedImgSrc);
             logoImage.attr('src', selectedImgSrc).attr('alt', `Logo for station ${piCode}`).css('cursor', 'pointer');
             LogoSearch(piCode, ituCode, Program_original);  // Calling LogoSearch with the logo found
         } else {
-            throw new Error("Kein Logo gefunden");
+            throw new Error("No logo found");
         }
     } catch (error) {
-        console.error('Fehler beim Abrufen und Verarbeiten der Seite:', error);
+        console.error('Error fetching and processing the page:', error);
         if (Program_original && piCode && ituCode) {
             logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
             LogoSearch(piCode, ituCode, Program_original);  // Calling LogoSearch even if no logo is found
         } else {
-            console.log("Program, PI-Code oder ITU-Code fehlen, kein Default-Logo wird geladen.");
+            console.log("Program, PI code, or ITU code missing, no default logo will be loaded.");
         }
     }
 }
@@ -296,7 +336,7 @@ async function OnlineradioboxSearch(Program, ituCode, piCode) {
     const selectedCountryCode = selectedCountry ? selectedCountry.country_code : null;
 
     const searchUrl = `https://onlineradiobox.com/search?c=${selectedCountryCode}&cs=${selectedCountryCode}&q=${currentStation.replace(/\s/g, '%20')}`;
-    console.log('Die Such-URL ist:', searchUrl);
+    console.log('Search URL:', searchUrl);
 
     await parsePage(searchUrl, Program, ituCode, piCode);  // Forwarding of additional parameters
 }
