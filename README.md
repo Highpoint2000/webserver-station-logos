@@ -20,6 +20,10 @@ For missing or incorrect logos, please use the integrated Google search function
 
 ## History:
 
+### version v3.2a:
+- Added switch for alternative search at onlineradiobox.com
+- Added switch for logo reload when PI code changes, recommended for SDR receivers (e.g.: Airspy)
+
 ### version v3.2:
 - Switching the query process to JSON
 - Reduction of query values
