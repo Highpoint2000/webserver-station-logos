@@ -6,7 +6,7 @@ Compatible from version 1.2.0
 ## Installation notes:
 
 1. [Download](https://github.com/Highpoint2000/webserver-station-logos/releases) the last repository as a zip
-2. Extract the Station Logo.js and the Station Logo folder with the updateStationLogo-js into the web server plugins folder (..fm-dx-webserver-main\plugins)
+2. Unpack the Station Logo.js and the Station Logo folder with the updateStationLogo-js into the web server plugins folder (..fm-dx-webserver-main\plugins) [image](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/e0a6fd0e-a70e-4624-9487-b96df144d703)
 3. Restart the server
 4. Activate the plugin it in the settings
 
