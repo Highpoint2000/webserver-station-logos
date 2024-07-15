@@ -3,6 +3,10 @@
 
 Compatible from version 1.2.0
 
+
+## Disclaimer: 
+If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
+
 ## Installation notes:
 
 1. [Download](https://github.com/Highpoint2000/webserver-station-logos/releases) the last repository as a zip
