@@ -7,7 +7,7 @@
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                          last update: 27.05.24 ///
+///                                                          last update: 18.07.24 ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 // Enable or disable onlineradiobox search if no local or server logo is found.
@@ -292,7 +292,7 @@ function fetchWithTimeout(url, timeout = 5000) {
 
 async function parsePage(url, Program_original, ituCode, piCode) {
     try {
-        const corsAnywhereUrl = 'http://89.58.28.164:13128/';
+        const corsAnywhereUrl = 'https://cors-proxy.highpoint2000.synology.me:5001/';
         const fetchPromise = fetch(`${corsAnywhereUrl}${url}`);
         const timeoutPromise = new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error('Request timed out')), 2000);
