@@ -1,13 +1,12 @@
 # Station Logo Plugin for [FM-DX-Webserver](https://github.com/NoobishSVK/fm-dx-webserver)
 ![Screenshot3](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/c66bab09-045e-47d3-a719-9e269bb48a4a)
 
-## v3.2b:
-- Design correction for stereo symbol in mobile layout
-- CORS PROXY HTTPS Support for onlineradiobox.com 
+## v3.2c:
+- Design adjustment for transparent background
 
 ## Installation notes:
 
-Compatible from webserver version 1.2.4 !!! Older webserver versions take the Plugin Version 3.2a !!!
+Compatible from webserver version 1.2.5 !!! Older webserver versions take the Plugin Version 3.2a and 3.2b !!!
 
 1. [Download](https://github.com/Highpoint2000/webserver-station-logos/releases) the last repository as a zip
 2. Unpack the Station Logo.js and the Station Logo folder with the updateStationLogo-js into the web server plugins folder (..fm-dx-webserver-main\plugins) [image](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/e0a6fd0e-a70e-4624-9487-b96df144d703)
@@ -26,6 +25,10 @@ For missing or incorrect logos, please use the integrated Google search function
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
 ## History:
+
+### v3.2b (only works from web server version 1.2.4!!!):
+- Design correction for stereo symbol in mobile layout
+- CORS PROXY HTTPS Support for onlineradiobox.com 
 
 ### v3.2a:
 - Added switch for alternative search at onlineradiobox.com
