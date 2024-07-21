@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2b)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2c)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
@@ -9,6 +9,8 @@
 ///  73! Highpoint                                                                 ///
 ///                                                          last update: 21.07.24 ///
 //////////////////////////////////////////////////////////////////////////////////////
+
+///  This plugin only works from web server version 1.2.5!!!
 
 // Enable or disable onlineradiobox search if no local or server logo is found.
 const enableOnlineradioboxSearch = true;
@@ -238,7 +240,7 @@ function LogoSearch(piCode, ituCode, Program) {
         const ituCodeCurrentStation = `${currentStation} ${countryName}`; // Add the country name to the current station
         const searchQuery = `${ituCodeCurrentStation} filetype:png OR filetype:svg Radio&tbs=sbd:1&udm=2`;
         console.log("Search query:", searchQuery);
-        tooltipContainer.css('background-color', 'var(--color-2)').off('click').on('click', () => {
+        tooltipContainer.css('background-color', 'var(--color-2-transparent)').off('click').on('click', () => {
             console.log('Opening URL:', 'https://www.google.com/search?q=' + searchQuery);
             window.open('https://www.google.com/search?q=' + searchQuery, '_blank');
         });
