@@ -1,7 +1,7 @@
 # Station Logo Plugin for [FM-DX-Webserver](https://github.com/NoobishSVK/fm-dx-webserver)
 ![Screenshot3](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/c66bab09-045e-47d3-a719-9e269bb48a4a)
 
-### version v3.2b:
+## version v3.2b:
 - Design correction for stereo symbol in mobile layout
 - CORS PROXY HTTPS Support for onlineradiobox.com 
 
