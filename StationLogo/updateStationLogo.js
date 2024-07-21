@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2a)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2b)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                          last update: 18.07.24 ///
+///                                                          last update: 21.07.24 ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 // Enable or disable onlineradiobox search if no local or server logo is found.
@@ -62,8 +62,11 @@ var MobileHTML = `
                 <div style="display:inline-block">
                     <span style="margin-left: 20px;display: block;margin-top: 2px;" class="data-flag"></span>
                 </div>
-                <span class="pointer stereo-container" style="position: relative;">
-                    <span style="margin-left: 20px;" class="data-st">ST</span>
+                <span class="pointer stereo-container" style="position: relative; margin-left: 20px;" role="button" aria-label="Stereo / Mono toggle" tabindex="0">
+					<div class="circle-container">
+						<div class="circle data-st circle1"></div>
+                        <div class="circle data-st circle2"></div>
+                    </div>
                     <span class="overlay tooltip" data-tooltip="Stereo / Mono toggle. <br><strong>Click to toggle."></span>
                 </span>
                 <span style="margin-left: 15px;" class="data-ms">MS</span>
