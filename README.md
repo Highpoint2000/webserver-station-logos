@@ -4,6 +4,10 @@
 ## Disclaimer: 
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
+### version v3.2b:
+- Design correction for stereo symbol in mobile layout
+- CORS PROXY HTTPS Support for onlineradiobox.com 
+
 ## Installation notes:
 
 Compatible from webserver version 1.2.0
