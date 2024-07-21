@@ -1,13 +1,13 @@
 # Station Logo Plugin for [FM-DX-Webserver](https://github.com/NoobishSVK/fm-dx-webserver)
 ![Screenshot3](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/c66bab09-045e-47d3-a719-9e269bb48a4a)
 
-## version v3.2b:
+## v3.2b:
 - Design correction for stereo symbol in mobile layout
 - CORS PROXY HTTPS Support for onlineradiobox.com 
 
 ## Installation notes:
 
-Compatible from webserver version 1.2.4 !!!
+Compatible from webserver version 1.2.4 !!! Older webserver versions take the Plugin Version 3.2a !!!
 
 1. [Download](https://github.com/Highpoint2000/webserver-station-logos/releases) the last repository as a zip
 2. Unpack the Station Logo.js and the Station Logo folder with the updateStationLogo-js into the web server plugins folder (..fm-dx-webserver-main\plugins) [image](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/e0a6fd0e-a70e-4624-9487-b96df144d703)
@@ -27,54 +27,54 @@ If a logo used in the plugin violates copyright, please let [me](mailto:highpoin
 
 ## History:
 
-### version v3.2a:
+### v3.2a:
 - Added switch for alternative search at onlineradiobox.com
 - Added switch for logo reload when PI code changes, recommended for SDR receivers (e.g.: Airspy)
 
-### version v3.2:
+### v3.2:
 - Switching the query process to JSON
 - Reduction of query values
 - Stability and performance improvements
 - Bug fixing
 - Countrylist (ITU codes) were moved to the server
 
-### version v3.12a:
+### v3.12a:
 - program name logo query in capital letters
 - itu code additions
 - code optimization & bug fixing
 
-### version v3.12:
+### v3.12:
 - additional query for PI code and program name (Local + Server)
 
-### version v3.11:
+### v3.11:
 - Play/Stop button back to original size
 - Problem with logo retrieval from onlineradiobox.com fixed
 
-### version v3.1:
+### v3.1:
 - Instead of Lyngsat, missing logos are now downloaded from onlineradiobox.com
 - Fixed the disappearance of the PS identifier
 - remove tooltip
 - code optimizations
 
-### version v3.0:
+### v3.0:
 - additional logo query via the Lyngsat website
 - fixed missing display of TP/TA/MO/ST on mobile devices
 
-### version v2.25c:
+### v2.25c:
 - local folder "/web/logos" is prioritized
 - further optimized Google Search Function (e.g. country name added)
 
-### version v2.25b:
+### v2.25b:
 - Tooltip has been bugfixed
 
-### version v2.25a:
+### v2.25a:
 - optimized Google Search Function (ITU code added)
   
-### version v2.25:
+### v2.25:
 - Google Search Function
   -> When a RDS Station has been identified, the logo field is highlighted. Now you can click on the field and go directly to Google image search to download a suitable logo quickly and easily
 
-### version v2.2:
+### v2.2:
 - code optimizing
 - The script now also searches the local directory /web/logos
 
