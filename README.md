@@ -2,7 +2,7 @@
 
 This script provides a logo for identified radio stations.
 
-![Screenshot3](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/c66bab09-045e-47d3-a719-9e269bb48a4a)
+![image](https://github.com/user-attachments/assets/4b28bf54-4686-4253-97b8-2929eb67b612)
 
 ## v3.2c:
 - Design adjustment for transparent background
