@@ -6,6 +6,7 @@ This script provides a logo for identified radio stations.
 
 ## v3.2c:
 - Design adjustment for transparent background
+- Stereo toggle problem fixed on mobile devices
 
 ## Installation notes:
 
