@@ -1,4 +1,3 @@
-
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
 ///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2c)                        ///
@@ -13,12 +12,14 @@
 
 ///  This plugin only works from web server version 1.2.5!!!
 
-// Enable or disable onlineradiobox search if no local or server logo is found.
-const enableOnlineradioboxSearch = true;
+const enableOnlineradioboxSearch = true; // Enable or disable onlineradiobox search if no local or server logo is found.
+const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 
-// Enable or disable updating the logo when the PI code changes on the current frequency.
-// For Airspy and other SDR receivers, this function should be set to false.
-const updateLogoOnPiCodeChange = true;
+// Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
+(() => {
+	
+	const plugin_version = '3.2c'; // Plugin Version
+    const StationLogoPlugin = (() => {
 
 //////////////// Insert logo code for desktop devices ////////////////////////
 
@@ -97,6 +98,7 @@ let currentFrequenz = null;
 let logoLoadedForCurrentFrequenz = false;
 let logoLoadingInProgress = false;
 
+// Function to update the station logo based on various parameters
 function updateStationLogo(piCode, ituCode, Program, frequenz) {
     const tooltipContainer = $('.panel-30');
 
@@ -119,16 +121,18 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
         logoLoadedForCurrentFrequenz = false; // Reset variable on frequency change
     }
 
-    // Only load logo if the frequency has changed and no logo has been loaded for the current frequency
+    // Only load the logo if the frequency has changed or if the PI code, ITU code, or Program have changed
     if (!logoLoadedForCurrentFrequenz || (updateLogoOnPiCodeChange && (piCode !== oldPiCode || ituCode !== oldItuCode || Program !== oldProgram))) {
         logoLoadingInProgress = true;
         logoImage.attr('data-picode', piCode);
         logoImage.attr('data-itucode', ituCode);
         logoImage.attr('data-Program', Program);
         logoImage.attr('data-frequenz', frequenz);
+		logoImage.attr('title', `Plugin Version: ${plugin_version}`);
 
         let formattedProgram = Program.toUpperCase().replace(/\s+/g, '');
 
+        // Define paths to check for the logo
         const localPaths = [
             `${localpath}${piCode}.gif`,
             `${localpath}${piCode}.svg`,
@@ -144,6 +148,7 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
             `${serverpath}${ituCode}/${piCode}_${formattedProgram}.png`
         ];
 
+        // Function to check if logo exists at specified paths
         function checkPaths(paths, onSuccess, onFailure, triggerLogoSearch) {
             function checkNext(index) {
                 if (index >= paths.length) {
@@ -207,6 +212,7 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
     }
 }
 
+// Function to wait for the server to define the socket and handle incoming messages
 function waitForServer() {
     if (typeof socket !== "undefined") {
         window.socket.addEventListener("message", (event) => {
@@ -225,6 +231,7 @@ function waitForServer() {
 // Call waitForServer to wait for the socket definition
 waitForServer();
 
+// Function to perform a Google search for station logos and handle results
 function LogoSearch(piCode, ituCode, Program) {
     const currentPiCode = piCode;
     const currentStation = Program;
@@ -289,6 +296,7 @@ async function compareAndSelectImage(currentStation, imgSrcElements) {
     return selectedImgSrc;
 }
 
+// Function to fetch a URL with a timeout
 function fetchWithTimeout(url, timeout = 5000) {
     const controller = new AbortController();
     const signal = controller.signal;
@@ -296,6 +304,7 @@ function fetchWithTimeout(url, timeout = 5000) {
     return fetch(url, { signal });
 }
 
+// Function to parse a page, search for logos, and handle results
 async function parsePage(url, Program_original, ituCode, piCode) {
     try {
         const corsAnywhereUrl = 'https://cors-proxy.highpoint2000.synology.me:5001/';
@@ -349,3 +358,6 @@ async function OnlineradioboxSearch(Program, ituCode, piCode) {
 
 // Load the countryList JavaScript from an external source
 $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
+
+    })();
+})();
