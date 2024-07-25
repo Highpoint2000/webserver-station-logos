@@ -1,3 +1,4 @@
+
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
 ///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2c)                        ///
@@ -7,7 +8,7 @@
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                          last update: 21.07.24 ///
+///                                                          last update: 25.07.24 ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 ///  This plugin only works from web server version 1.2.5!!!
@@ -50,7 +51,7 @@ var flagsContainerPhone = document.getElementById('flags-container-phone');
 
 // Create the new HTML code for the replacement
 var MobileHTML = `
-    <div id="flags-container-phone" class="panel-33">
+    <div id="flags-container-phone" class="panel-33 user-select-none">
         <h2 class="show-phone">    
             <div id="logo-container-phone" style="width: auto; height: 70px; display: flex; justify-content: center; align-items: center; margin: auto;">                 
                 <img id="station-logo-phone" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-phone" style="max-width: 160px; padding: 1px 2px; max-height: 100%; margin-top: 0px; display: block;">    
