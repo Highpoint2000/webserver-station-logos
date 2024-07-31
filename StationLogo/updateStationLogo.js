@@ -1,16 +1,16 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.2c)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.3)                         ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                          last update: 25.07.24 ///
+///                                                          last update: 31.07.24 ///
 //////////////////////////////////////////////////////////////////////////////////////
 
-///  This plugin only works from web server version 1.2.5!!!
+///  This plugin only works from web server version 1.2.6!!!
 
 const enableOnlineradioboxSearch = true; // Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
@@ -18,7 +18,7 @@ const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo wh
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
 	
-	const plugin_version = '3.2c'; // Plugin Version
+	const plugin_version = '3.3'; // Plugin Version
     const StationLogoPlugin = (() => {
 
 //////////////// Insert logo code for desktop devices ////////////////////////
@@ -219,7 +219,7 @@ function waitForServer() {
             let parsedData = JSON.parse(event.data);
             let piCode = parsedData.pi.toUpperCase();
             let ituCode = parsedData.txInfo.itu.toUpperCase();
-            let Program = parsedData.txInfo.station.replace(/%/g, '%25');
+            let Program = parsedData.txInfo.tx.replace(/%/g, '%25');
             let frequenz = parsedData.freq;
             updateStationLogo(piCode, ituCode, Program, frequenz);
         });
