@@ -4,14 +4,12 @@ This script provides a logo for identified radio stations.
 
 ![image](https://github.com/user-attachments/assets/4b28bf54-4686-4253-97b8-2929eb67b612)
 
-## v3.2c:
-- Design adjustment for transparent background
-- Stereo toggle problem fixed on mobile devices
-- mouseover show plugin version 
+## v3.3:
+- compatible with changed websocket data in version 1.2.6
 
 ## Installation notes:
 
-Compatible from webserver version 1.2.5 !!! Older webserver versions take the Plugin Version 3.2a and 3.2b !!!
+Compatible from webserver version 1.2.6 !!! Older webserver versions take the Plugin Version 3.2a, 3.2b or 3.2c !!!
 
 1. [Download](https://github.com/Highpoint2000/webserver-station-logos/releases) the last repository as a zip
 2. Unpack the Station Logo.js and the Station Logo folder with the updateStationLogo-js into the web server plugins folder (..fm-dx-webserver-main\plugins) [image](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/e0a6fd0e-a70e-4624-9487-b96df144d703)
@@ -31,58 +29,63 @@ If a logo used in the plugin violates copyright, please let [me](mailto:highpoin
 
 ## History:
 
+## v3.2c (only works from web server version 1.2.5!!!):
+- Design adjustment for transparent background
+- Stereo toggle problem fixed on mobile devices
+- mouseover show plugin version
+
 ### v3.2b (only works from web server version 1.2.4!!!):
 - Design correction for stereo symbol in mobile layout
 - CORS PROXY HTTPS Support for onlineradiobox.com 
 
-### v3.2a:
+### v3.2a
 - Added switch for alternative search at onlineradiobox.com
 - Added switch for logo reload when PI code changes, recommended for SDR receivers (e.g.: Airspy)
 
-### v3.2:
+### v3.2
 - Switching the query process to JSON
 - Reduction of query values
 - Stability and performance improvements
 - Bug fixing
 - Countrylist (ITU codes) were moved to the server
 
-### v3.12a:
+### v3.12a
 - program name logo query in capital letters
 - itu code additions
 - code optimization & bug fixing
 
-### v3.12:
+### v3.12
 - additional query for PI code and program name (Local + Server)
 
-### v3.11:
+### v3.11
 - Play/Stop button back to original size
 - Problem with logo retrieval from onlineradiobox.com fixed
 
-### v3.1:
+### v3.1
 - Instead of Lyngsat, missing logos are now downloaded from onlineradiobox.com
 - Fixed the disappearance of the PS identifier
 - remove tooltip
 - code optimizations
 
-### v3.0:
+### v3.0
 - additional logo query via the Lyngsat website
 - fixed missing display of TP/TA/MO/ST on mobile devices
 
-### v2.25c:
+### v2.25c
 - local folder "/web/logos" is prioritized
 - further optimized Google Search Function (e.g. country name added)
 
-### v2.25b:
+### v2.25b
 - Tooltip has been bugfixed
 
-### v2.25a:
+### v2.25a
 - optimized Google Search Function (ITU code added)
   
-### v2.25:
+### v2.25
 - Google Search Function
   -> When a RDS Station has been identified, the logo field is highlighted. Now you can click on the field and go directly to Google image search to download a suitable logo quickly and easily
 
-### v2.2:
+### v2.2
 - code optimizing
 - The script now also searches the local directory /web/logos
 
