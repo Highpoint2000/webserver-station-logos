@@ -29,7 +29,7 @@ If a logo used in the plugin violates copyright, please let [me](mailto:highpoin
 
 ## History:
 
-## v3.2c (only works from web server version 1.2.5!!!):
+### v3.2c (only works from web server version 1.2.5!!!):
 - Design adjustment for transparent background
 - Stereo toggle problem fixed on mobile devices
 - mouseover show plugin version
