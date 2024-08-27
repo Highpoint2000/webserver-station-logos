@@ -19,7 +19,7 @@ const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo wh
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
     
-    const plugin_version = '3.3'; // Plugin Version
+    const plugin_version = '3.3a'; // Plugin Version
     const StationLogoPlugin = (() => {
 
 //////////////// Insert logo code for desktop devices ////////////////////////
