@@ -4,8 +4,8 @@ This script provides a logo for identified radio stations.
 
 ![image](https://github.com/user-attachments/assets/4b28bf54-4686-4253-97b8-2929eb67b612)
 
-## v3.3:
-- compatible with changed websocket data in version 1.2.6
+## v3.3a:
+- Built-in switch to deactivate local search (reduction of error messages in the console!)
 
 ## Installation notes:
 
@@ -28,6 +28,9 @@ For missing or incorrect logos, please use the integrated Google search function
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
 ## History:
+
+### v3.3:
+- compatible with changed websocket data in version 1.2.6
 
 ### v3.2c (only works from web server version 1.2.5!!!):
 - Design adjustment for transparent background
