@@ -1,24 +1,25 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.3)                         ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.3a)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                          last update: 31.07.24 ///
+///                                                          last update: 27.08.24 ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 ///  This plugin only works from web server version 1.2.6!!!
 
+const enableSearchLocal = false; // Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = true; // Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
-	
-	const plugin_version = '3.3'; // Plugin Version
+    
+    const plugin_version = '3.3'; // Plugin Version
     const StationLogoPlugin = (() => {
 
 //////////////// Insert logo code for desktop devices ////////////////////////
@@ -67,8 +68,8 @@ var MobileHTML = `
                     <span style="margin-left: 20px;display: block;margin-top: 2px;" class="data-flag"></span>
                 </div>
                 <span class="pointer stereo-container" style="position: relative; margin-left: 20px;" role="button" aria-label="Stereo / Mono toggle" tabindex="0">
-					<div class="circle-container">
-						<div class="circle data-st circle1"></div>
+                    <div class="circle-container">
+                        <div class="circle data-st circle1"></div>
                         <div class="circle data-st circle2"></div>
                     </div>
                     <span class="overlay tooltip" data-tooltip="Stereo / Mono toggle. <br><strong>Click to toggle."></span>
@@ -128,25 +129,30 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
         logoImage.attr('data-itucode', ituCode);
         logoImage.attr('data-Program', Program);
         logoImage.attr('data-frequenz', frequenz);
-		logoImage.attr('title', `Plugin Version: ${plugin_version}`);
+        logoImage.attr('title', `Plugin Version: ${plugin_version}`);
 
         let formattedProgram = Program.toUpperCase().replace(/\s+/g, '');
 
         // Define paths to check for the logo
-        const localPaths = [
+        const localPaths = enableSearchLocal ? [
             `${localpath}${piCode}.gif`,
             `${localpath}${piCode}.svg`,
             `${localpath}${piCode}.png`
-        ];
+        ] : [];
 
         const remotePaths = [
-            `${localpath}${piCode}_${formattedProgram}.svg`,
-            `${localpath}${piCode}_${formattedProgram}.png`,
+            ...(enableSearchLocal ? [
+                `${localpath}${piCode}_${formattedProgram}.svg`,
+                `${localpath}${piCode}_${formattedProgram}.png`
+            ] : []),
             `${serverpath}${ituCode}/${piCode}.svg`,
             `${serverpath}${ituCode}/${piCode}.png`,
             `${serverpath}${ituCode}/${piCode}_${formattedProgram}.svg`,
             `${serverpath}${ituCode}/${piCode}_${formattedProgram}.png`
         ];
+
+        // Initialize checked paths array
+        let checkedPaths = [];
 
         // Function to check if logo exists at specified paths
         function checkPaths(paths, onSuccess, onFailure, triggerLogoSearch) {
@@ -154,6 +160,12 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
                 if (index >= paths.length) {
                     if (onFailure) onFailure();
                     logoLoadingInProgress = false;
+                    return;
+                }
+
+                // Skip path if already checked
+                if (checkedPaths.includes(paths[index])) {
+                    checkNext(index + 1);
                     return;
                 }
 
@@ -171,6 +183,7 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
                         logoLoadingInProgress = false;
                     },
                     error: function() {
+                        checkedPaths.push(paths[index]); // Mark path as checked
                         checkNext(index + 1);
                     }
                 });
