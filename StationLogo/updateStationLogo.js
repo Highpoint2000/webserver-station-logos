@@ -7,7 +7,8 @@
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                          last update: 27.08.24 ///
+///                                                    last update: 09.09.24       ///
+///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 ///  This plugin only works from web server version 1.2.6!!!
@@ -261,10 +262,10 @@ function LogoSearch(piCode, ituCode, Program) {
         const ituCodeCurrentStation = `${currentStation} ${countryName}`; // Add the country name to the current station
         const searchQuery = `${ituCodeCurrentStation} filetype:png OR filetype:svg Radio&tbs=sbd:1&udm=2`;
         console.log("Search query:", searchQuery);
-        tooltipContainer.css('background-color', 'var(--color-2-transparent)').off('click').on('click', () => {
-            console.log('Opening URL:', 'https://www.google.com/search?q=' + searchQuery);
-            window.open('https://www.google.com/search?q=' + searchQuery, '_blank');
-        });
+		tooltipContainer.css('background-color', 'var(--color-2-transparent)').off('click').on('click', () => {
+			console.log('Opening URL:', 'https://www.google.com/search?q=' + searchQuery);
+			window.location.href = 'https://www.google.com/search?q=' + searchQuery;
+		});
 
         // Set the cursor to pointer
         logoImage.css('cursor', 'pointer');
