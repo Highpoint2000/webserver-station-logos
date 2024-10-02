@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.3a)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.3b BETA)                   ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                    last update: 09.09.24       ///
+///                                                    last update: 02.10.24       ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +20,7 @@ const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo wh
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
     
-    const plugin_version = '3.3a'; // Plugin Version
+    const plugin_version = '3.3b BETA'; // Plugin Version
     const StationLogoPlugin = (() => {
 
 //////////////// Insert logo code for desktop devices ////////////////////////
@@ -321,7 +321,7 @@ function fetchWithTimeout(url, timeout = 5000) {
 // Function to parse a page, search for logos, and handle results
 async function parsePage(url, Program_original, ituCode, piCode) {
     try {
-        const corsAnywhereUrl = 'https://cors-proxy.highpoint2000.synology.me:5001/';
+        const corsAnywhereUrl = 'https://cors-proxy.de:13128/';
         const fetchPromise = fetch(`${corsAnywhereUrl}${url}`);
         const timeoutPromise = new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error('Request timed out')), 2000);
