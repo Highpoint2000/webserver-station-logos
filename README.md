@@ -29,6 +29,9 @@ If a logo used in the plugin violates copyright, please let [me](mailto:highpoin
 
 ## History:
 
+### v3.3b BETA:
+- Improved cors proxy mechanism
+
 ### v3.3:
 - compatible with changed websocket data in version 1.2.6
 
