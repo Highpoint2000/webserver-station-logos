@@ -14,7 +14,7 @@ Compatible from webserver version 1.2.6 !!! Older webserver versions take the Pl
 1. [Download](https://github.com/Highpoint2000/webserver-station-logos/releases) the last repository as a zip
 2. Unpack the Station Logo.js and the Station Logo folder with the updateStationLogo-js into the web server plugins folder (..fm-dx-webserver-main\plugins) [image](https://github.com/Highpoint2000/webserver-station-logos/assets/168109804/e0a6fd0e-a70e-4624-9487-b96df144d703)
 3. Restart the server
-4. Activate the plugin it in the settings
+4. coming soon:  Activate the plugin it in the settings
 
 #### For anyone who would like to receive their future updates automatically, please install the Always on Update (AOU) version from [here](https://tef.noobish.eu/logos/scripts/StationLogo_AOU_Version.zip). This script always gets the current code from the logo server. If you have installed the AOU version before May 7th, 2024, you will have to clear the cache regularly to use the latest version of the logo plugin. This bug has been fixed in the current [download](https://tef.noobish.eu/logos/scripts/StationLogo_AOU_Version.zip) file!
 
