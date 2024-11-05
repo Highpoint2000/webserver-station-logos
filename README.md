@@ -4,8 +4,8 @@ This script provides a logo for identified radio stations.
 
 ![image](https://github.com/user-attachments/assets/4b28bf54-4686-4253-97b8-2929eb67b612)
 
-## v3.3a:
-- Built-in switch to deactivate local search (reduction of error messages in the console!)
+## v3.3b:
+- Query order adjusted
 
 ## Installation notes:
 
@@ -29,7 +29,8 @@ If a logo used in the plugin violates copyright, please let [me](mailto:highpoin
 
 ## History:
 
-### v3.3b BETA:
+### v3.3a:
+- Built-in switch to deactivate local search (reduction of error messages in the console!)
 - Improved cors proxy mechanism
 
 ### v3.3:
