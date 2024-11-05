@@ -7,7 +7,7 @@
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                    last update: 02.10.24       ///
+///                                                    last update: 05.11.24       ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +20,7 @@ const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo wh
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
     
-    const plugin_version = '3.3b BETA'; // Plugin Version
+    const plugin_version = '3.3b'; // Plugin Version
     const StationLogoPlugin = (() => {
 
 //////////////// Insert logo code for desktop devices ////////////////////////
@@ -146,10 +146,10 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
                 `${localpath}${piCode}_${formattedProgram}.svg`,
                 `${localpath}${piCode}_${formattedProgram}.png`
             ] : []),
-            `${serverpath}${ituCode}/${piCode}.svg`,
-            `${serverpath}${ituCode}/${piCode}.png`,
             `${serverpath}${ituCode}/${piCode}_${formattedProgram}.svg`,
-            `${serverpath}${ituCode}/${piCode}_${formattedProgram}.png`
+            `${serverpath}${ituCode}/${piCode}_${formattedProgram}.png`,
+            `${serverpath}${ituCode}/${piCode}.svg`,
+            `${serverpath}${ituCode}/${piCode}.png`
         ];
 
         // Initialize checked paths array
