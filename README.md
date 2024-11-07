@@ -2,7 +2,8 @@
 
 This script provides a logo for identified radio stations.
 
-![image](https://github.com/user-attachments/assets/4b28bf54-4686-4253-97b8-2929eb67b612)
+![image](https://github.com/user-attachments/assets/ede3346b-ad2c-46f4-8298-157a8b1469c0)
+
 
 ## v3.3b:
 - Improved cors proxy mechanism
