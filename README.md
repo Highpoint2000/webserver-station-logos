@@ -7,6 +7,7 @@ This script provides a logo for identified radio stations.
 ## v3.3b:
 - Improved cors proxy mechanism
 - Query order adjusted
+- small design adjustment
 
 ## Installation notes:
 
