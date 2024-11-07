@@ -7,7 +7,7 @@
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                    last update: 05.11.24       ///
+///                                                    last update: 07.11.24       ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -28,7 +28,7 @@ const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo wh
 // Define the HTML code as a string for the logo container
 var LogoContainerHtml = '<div style="width: 5%;"></div> <!-- Spacer -->' +
     '<div class="panel-30 m-0 hide-phone" style="width: 48%" >' +
-    '    <div id="logo-container-desktop" style="width: auto; height: 60px; display: flex; justify-content: center; align-items: center; margin: auto;">' +
+    '    <div id="logo-container-desktop" style="width: 215px; height: 60px; display: flex; justify-content: center; align-items: center; margin: auto;">' +
     '        <img id="station-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-desktop" style="max-width: 140px; padding: 1px 2px; max-height: 100%; margin-top: 30px; display: block; cursor: pointer;">' +
     '    </div>' +
     '</div>';
