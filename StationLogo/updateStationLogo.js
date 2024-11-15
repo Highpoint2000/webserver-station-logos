@@ -1,3 +1,4 @@
+(() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
 ///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4)                         ///
@@ -18,9 +19,8 @@ const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox se
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 const updateInfo = true; 					// Enable or disable daily versions check for admin login
 
-// Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
-(() => {
-    
+//////////////////////////////////////////////////////////////////////////////////////
+   
 // Define local version and Github settings
 const plugin_version = '3.4';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
