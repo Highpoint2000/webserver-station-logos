@@ -1,28 +1,35 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.3b BETA)                   ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4)                         ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                    last update: 07.11.24       ///
+///                                                   	 last update: 15.11.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 ///  This plugin only works from web server version 1.2.6!!!
 
-const enableSearchLocal = true; // Enable or disable searching local paths (.../web/logos)
-const enableOnlineradioboxSearch = true; // Enable or disable onlineradiobox search if no local or server logo is found.
-const updateLogoOnPiCodeChange = true; // Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
+const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
+const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
+const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
+const updateInfo = true; 					// Enable or disable versions check
 
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
     
-    const plugin_version = '3.3b'; // Plugin Version
-    const StationLogoPlugin = (() => {
-
+// Define local version and Github settings
+const plugin_version = '3.4';
+const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
+const plugin_JSfile = 'main/StationLogo/updateStationLogo.js'
+const plugin_name = 'Station Logo';
+	
+let isTuneAuthenticated;
+const PluginUpdateKey = `${plugin_name}_lastUpdateNotification`; // Unique key for localStorage
+	
 //////////////// Insert logo code for desktop devices ////////////////////////
 
 // Define the HTML code as a string for the logo container
@@ -99,6 +106,10 @@ if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
 let currentFrequenz = null;
 let logoLoadedForCurrentFrequenz = false;
 let logoLoadingInProgress = false;
+let localpiCode = '';
+
+// Store checked paths per frequency
+let checkedPathsPerFrequency = {};
 
 // Function to update the station logo based on various parameters
 function updateStationLogo(piCode, ituCode, Program, frequenz) {
@@ -121,6 +132,8 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
     if (frequenz !== currentFrequenz) {
         currentFrequenz = frequenz;
         logoLoadedForCurrentFrequenz = false; // Reset variable on frequency change
+        // Clear checked paths for the new frequency
+        checkedPathsPerFrequency[frequenz] = new Set();
     }
 
     // Only load the logo if the frequency has changed or if the PI code, ITU code, or Program have changed
@@ -141,19 +154,13 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
             `${localpath}${piCode}.png`
         ] : [];
 
-        const remotePaths = [
-            ...(enableSearchLocal ? [
-                `${localpath}${piCode}_${formattedProgram}.svg`,
-                `${localpath}${piCode}_${formattedProgram}.png`
-            ] : []),
-            `${serverpath}${ituCode}/${piCode}_${formattedProgram}.svg`,
-            `${serverpath}${ituCode}/${piCode}_${formattedProgram}.png`,
-            `${serverpath}${ituCode}/${piCode}.svg`,
-            `${serverpath}${ituCode}/${piCode}.png`
-        ];
+        // Ensure checked paths are initialized for the current frequency
+        if (!checkedPathsPerFrequency[frequenz]) {
+            checkedPathsPerFrequency[frequenz] = new Set();
+        }
 
-        // Initialize checked paths array
-        let checkedPaths = [];
+        // Filter out paths that have already been checked for the current frequency
+        const pathsToCheck = localPaths.filter(path => !checkedPathsPerFrequency[frequenz].has(path));
 
         // Function to check if logo exists at specified paths
         function checkPaths(paths, onSuccess, onFailure, triggerLogoSearch) {
@@ -164,18 +171,14 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
                     return;
                 }
 
-                // Skip path if already checked
-                if (checkedPaths.includes(paths[index])) {
-                    checkNext(index + 1);
-                    return;
-                }
+                const currentPath = paths[index];
 
                 $.ajax({
                     type: "HEAD",
-                    url: paths[index],
+                    url: currentPath,
                     success: function() {
-                        logoImage.attr('src', paths[index]).attr('alt', `Logo for station ${piCode}`).css('display', 'block');
-                        console.log("Logo found: " + paths[index]);
+                        logoImage.attr('src', currentPath).attr('alt', `Logo for station ${piCode}`).css('display', 'block');
+                        console.log("Logo found: " + currentPath);
                         if (onSuccess) onSuccess();
                         if (triggerLogoSearch && Program !== oldProgram) {
                             LogoSearch(piCode, ituCode, Program);
@@ -184,7 +187,7 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
                         logoLoadingInProgress = false;
                     },
                     error: function() {
-                        checkedPaths.push(paths[index]); // Mark path as checked
+                        checkedPathsPerFrequency[frequenz].add(currentPath); // Mark path as checked for this frequency
                         checkNext(index + 1);
                     }
                 });
@@ -193,22 +196,28 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
         }
 
         if (piCode !== '?') {
-            checkPaths(localPaths, null, function() {
-                // Only check remote paths if both piCode and ituCode are valid
+            checkPaths(pathsToCheck, null, function() {
+                // If no local path has the logo, proceed with remote checks
                 if (piCode !== '?' && ituCode !== '?') {
-                    checkPaths(remotePaths, null, function() {
-                        // If no logo is found, set default logo
-                        logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-                        tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
-                        logoImage.css('cursor', 'default');
-
-                        // If no logo is found, perform the Online Radio Box search
-                        if (enableOnlineradioboxSearch) {
-                            OnlineradioboxSearch(Program, ituCode, piCode);
-                            logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded
+                    const remoteLogo = checkRemotePaths(Program, ituCode, piCode);
+                    if (remoteLogo) {
+                        if (Program !== oldProgram) {
+                            LogoSearch(piCode, ituCode, Program);
                         }
                         logoLoadingInProgress = false;
-                    }, true);
+                        return; // Abort further checks
+                    }
+
+                    // If no logo is found, set default logo
+                    logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
+                    tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
+                    logoImage.css('cursor', 'default');
+
+                    if (enableOnlineradioboxSearch) {
+                        OnlineradioboxSearch(Program, ituCode, piCode);
+                        logoLoadedForCurrentFrequenz = true;
+                    }
+                    logoLoadingInProgress = false;
                 } else {
                     logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
                     tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
@@ -217,7 +226,6 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
                 }
             }, false);
         } else {
-            // If piCode is '?', set default logo
             logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
             tooltipContainer.css('background-color', '').off('click').css('cursor', 'auto');
             logoImage.css('cursor', 'default');
@@ -225,6 +233,80 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
         }
     }
 }
+
+// Function to retrieve remotePaths from logo_directory.html
+async function checkRemotePaths(Program, ituCode, piCode) {
+
+    const logoDirectoryUrl = `${serverpath}/logo_directory.html?nocache=${Date.now()}`;
+    let formattedProgram = Program.toUpperCase().replace(/\s+/g, '');
+
+    try {
+        const response = await fetch(logoDirectoryUrl);
+        if (!response.ok) throw new Error(`Failed to fetch logo directory: ${response.statusText}`);
+
+        const htmlText = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+
+        // Locate the folder for the specified ITU code
+        const folderElement = [...doc.querySelectorAll('.folder')].find(folder => folder.textContent.trim().endsWith(`./${ituCode}`));
+
+        if (!folderElement) {
+            return null; // No additional error message needed if the folder does not exist
+        }
+
+        const fileContainer = folderElement.nextElementSibling;
+        if (!fileContainer) {
+            return null; // No additional error message needed if no files are found
+        }
+
+        // Priority order: piCode_currentStation.svg > piCode_currentStation.png > piCode.svg > piCode.png
+        const priorityFiles = [
+            `${piCode}_${formattedProgram}.svg`,
+            `${piCode}_${formattedProgram}.png`,
+            `${piCode}.svg`,
+            `${piCode}.png`
+        ];
+
+        // Search for priority files
+        for (const fileName of priorityFiles) {
+            const fileElement = [...fileContainer.querySelectorAll('.file a')].find(file => file.textContent === fileName);
+
+            if (fileElement) {
+                // Prevent duplicate or missing slashes in the URL
+                const remotePath = `${serverpath}/${ituCode}/${fileElement.textContent}`.replace(/\/+/g, '/');
+                console.log(`Logo found in remote directory: ${remotePath}`);
+                // Logo found, update the image
+                logoLoadedForCurrentFrequenz = true;
+                logoImage.attr('src', remotePath).attr('alt', 'Station Logo').css('cursor', 'pointer');
+                return; // Return the found logo URL
+            }
+        }
+
+        // If no matching file is found, set the default logo
+        console.log(`No logo found in remote directory`);
+        logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
+        
+        // If no logo is found, perform the Online Radio Box search
+        if (enableOnlineradioboxSearch) {
+            OnlineradioboxSearch(Program, ituCode, piCode);
+            logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded
+        }
+        return null; // No logo URL found, return null
+
+    } catch (error) {
+        console.error('Error while fetching and parsing logo_directory.html:', error);
+        logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
+        
+        // If no logo is found, perform the Online Radio Box search
+        if (enableOnlineradioboxSearch) {
+            OnlineradioboxSearch(Program, ituCode, piCode);
+            logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded
+        }
+        return null; // In case of an error, the default logo is also set
+    }
+}
+
 
 // Function to wait for the server to define the socket and handle incoming messages
 function waitForServer() {
@@ -242,8 +324,10 @@ function waitForServer() {
     }
 }
 
-// Call waitForServer to wait for the socket definition
-waitForServer();
+setTimeout(() => {
+    waitForServer();
+}, 250); 
+
 
 // Function to perform a Google search for station logos and handle results
 function LogoSearch(piCode, ituCode, Program) {
@@ -253,8 +337,8 @@ function LogoSearch(piCode, ituCode, Program) {
     const tooltipContainer = $('.panel-30');
 
     // Debugging information
-    console.log("currentituCode:", currentituCode);
-    console.log("currentStation:", currentStation);
+    // console.log("currentituCode:", currentituCode);
+    // console.log("currentStation:", currentStation);
 
     // If piCode, ituCode, and Program are present, enable these commands
     if (currentituCode !== '' && currentStation !== '') {
@@ -373,5 +457,101 @@ async function OnlineradioboxSearch(Program, ituCode, piCode) {
 // Load the countryList JavaScript from an external source
 $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
 
-    })();
+ // Function to check if the notification was shown today
+  function shouldShowNotification() {
+    const lastNotificationDate = localStorage.getItem(PluginUpdateKey);
+    const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+
+    if (lastNotificationDate === today) {
+      return false; // Notification already shown today
+    }
+    // Update the date in localStorage to today
+    localStorage.setItem(PluginUpdateKey, today);
+    return true;
+  }
+
+  // Function to check plugin version
+  function checkPluginVersion() {
+    // Fetch and evaluate the plugin script
+    fetch(`${plugin_path}${plugin_JSfile}`)
+      .then(response => response.text())
+      .then(script => {
+        // Search for plugin_version in the external script
+        const pluginVersionMatch = script.match(/const plugin_version = '([\d.]+[a-z]*)';/);
+        if (!pluginVersionMatch) {
+          console.error(`${plugin_name}: Plugin version could not be found`);
+          return;
+        }
+
+        const externalPluginVersion = pluginVersionMatch[1];
+
+        // Function to compare versions
+        function compareVersions(local, remote) {
+          const localParts = local.split(/[\d.]+|[a-z]+/);
+          const remoteParts = remote.split(/[\d.]+|[a-z]+/);
+
+          // First compare numeric parts
+          for (let i = 0; i < Math.max(localParts.length, remoteParts.length); i++) {
+            const localPart = parseInt(localParts[i] || '0', 10);
+            const remotePart = parseInt(remoteParts[i] || '0', 10);
+
+            if (localPart > remotePart) return 1;
+            if (localPart < remotePart) return -1;
+          }
+
+          // Compare alphabetic suffixes
+          const localSuffix = local.match(/[a-z]+$/);
+          const remoteSuffix = remote.match(/[a-z]+$/);
+
+          if (!localSuffix && remoteSuffix) return -1;
+          if (localSuffix && !remoteSuffix) return 1;
+          if (localSuffix && remoteSuffix) {
+            if (localSuffix[0] > remoteSuffix[0]) return 1;
+            if (localSuffix[0] < remoteSuffix[0]) return -1;
+          }
+          return 0;
+        }
+
+        // Check version and show notification if needed
+        const comparisonResult = compareVersions(plugin_version, externalPluginVersion);
+        if (comparisonResult === 1) {
+          // Local version is newer than the external version
+          console.log(`${plugin_name}: The local version is newer than the plugin version.`);
+        } else if (comparisonResult === -1) {
+          // External version is newer and notification should be shown
+          if (shouldShowNotification()) {
+            console.log(`${plugin_name}: Plugin update available: ${plugin_version} -> ${externalPluginVersion}`);
+			sendToast('warning important', `${plugin_name}`, `Update available:<br>${plugin_version} -> ${externalPluginVersion}`, false, false);
+            }
+        } else {
+          // Versions are the same
+          console.log(`${plugin_name}: The local version matches the plugin version.`);
+        }
+      })
+      .catch(error => {
+        console.error(`${plugin_name}: Error fetching the plugin script:`, error);
+      });
+  }
+  
+    // Function to check if the user is logged in as an administrator
+    function checkAdminMode() {
+        const bodyText = document.body.textContent || document.body.innerText;
+        const AdminLoggedIn = bodyText.includes("You are logged in as an administrator.") || bodyText.includes("You are logged in as an adminstrator.");
+ 
+        if (AdminLoggedIn) {
+            console.log(`Admin mode found`);
+            isTuneAuthenticated = true;
+        } 
+    }
+	
+	checkAdminMode(); // Check admin mode
+
+  	setTimeout(() => {
+
+	// Execute the plugin version check if updateInfo is true and admin ist logged on
+	if (updateInfo && isTuneAuthenticated) {
+		checkPluginVersion();
+		}
+	}, 200);
+
 })();
