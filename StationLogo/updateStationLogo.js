@@ -16,7 +16,7 @@
 const enableSearchLocal = false; 		// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
-const updateInfo = true; 				// Enable or disable versions check
+const updateInfo = true; 				// Enable or disable daily versions check for admin login
 
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
