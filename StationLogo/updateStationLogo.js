@@ -13,10 +13,10 @@
 
 ///  This plugin only works from web server version 1.2.6!!!
 
-const enableSearchLocal = false; 		// Enable or disable searching local paths (.../web/logos)
+const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
-const updateInfo = true; 				// Enable or disable daily versions check for admin login
+const updateInfo = true; 					// Enable or disable daily versions check for admin login
 
 // Immediately invoked function expression (IIFE) to encapsulate the loggerPlugin code
 (() => {
@@ -486,31 +486,30 @@ $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
         const externalPluginVersion = pluginVersionMatch[1];
 
         // Function to compare versions
-        function compareVersions(local, remote) {
-          const localParts = local.split(/[\d.]+|[a-z]+/);
-          const remoteParts = remote.split(/[\d.]+|[a-z]+/);
+		function compareVersions(local, remote) {
+			const parseVersion = (version) =>
+			version.split(/(\d+|[a-z]+)/).filter(Boolean).map((part) => (isNaN(part) ? part : parseInt(part, 10)));
 
-          // First compare numeric parts
-          for (let i = 0; i < Math.max(localParts.length, remoteParts.length); i++) {
-            const localPart = parseInt(localParts[i] || '0', 10);
-            const remotePart = parseInt(remoteParts[i] || '0', 10);
+			const localParts = parseVersion(local);
+			const remoteParts = parseVersion(remote);
+	
+			for (let i = 0; i < Math.max(localParts.length, remoteParts.length); i++) {
+				const localPart = localParts[i] || 0; // Default to 0 if part is missing
+				const remotePart = remoteParts[i] || 0;
 
-            if (localPart > remotePart) return 1;
-            if (localPart < remotePart) return -1;
-          }
+				if (typeof localPart === 'number' && typeof remotePart === 'number') {
+					if (localPart > remotePart) return 1;
+					if (localPart < remotePart) return -1;
+				} else if (typeof localPart === 'string' && typeof remotePart === 'string') {
+					if (localPart > remotePart) return 1;
+					if (localPart < remotePart) return -1;
+				} else {
+					return typeof localPart === 'number' ? -1 : 1; // Numeric parts are "less than" string parts
+				}
+			}
 
-          // Compare alphabetic suffixes
-          const localSuffix = local.match(/[a-z]+$/);
-          const remoteSuffix = remote.match(/[a-z]+$/);
-
-          if (!localSuffix && remoteSuffix) return -1;
-          if (localSuffix && !remoteSuffix) return 1;
-          if (localSuffix && remoteSuffix) {
-            if (localSuffix[0] > remoteSuffix[0]) return 1;
-            if (localSuffix[0] < remoteSuffix[0]) return -1;
-          }
-          return 0;
-        }
+			return 0; // Versions are equal
+		}
 
         // Check version and show notification if needed
         const comparisonResult = compareVersions(plugin_version, externalPluginVersion);
@@ -531,7 +530,7 @@ $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
       .catch(error => {
         console.error(`${plugin_name}: Error fetching the plugin script:`, error);
       });
-  }
+	}
   
     // Function to check if the user is logged in as an administrator
     function checkAdminMode() {
