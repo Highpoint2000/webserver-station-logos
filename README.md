@@ -2,7 +2,8 @@
 
 This script provides a logo for identified radio stations.
 
-![image](https://github.com/user-attachments/assets/f27e0c3f-83fb-4661-98a0-51dc68115e4d)
+![image](https://github.com/user-attachments/assets/db9c267c-bf2b-45bd-9c99-d030a80e60f8)
+
 
 
 
