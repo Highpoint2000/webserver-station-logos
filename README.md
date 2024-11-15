@@ -28,7 +28,7 @@ The following variables can be changed in the header of the script:
     enableSearchLocal = false; 		// Enable or disable searching local paths (.../web/logos)
     enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
     updateLogoOnPiCodeChange = true; 	// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
-    updateInfo = true; 			// Enable or disable versions check
+    updateInfo = true; 			// Enable or disable daily versions check for admin login
 
 
 ## Important notes: 
