@@ -1,20 +1,20 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4)                         ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4a)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 15.11.24     ///
+///                                                   	 last update: 16.11.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 ///  This plugin only works from web server version 1.2.6!!!
 
-const enableSearchLocal = false;  			// Enable or disable searching local paths (.../web/logos)
+const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 const updateInfo = true; 					// Enable or disable daily versions check for admin login
@@ -22,7 +22,7 @@ const updateInfo = true; 					// Enable or disable daily versions check for admi
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4';
+const plugin_version = '3.4a';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
 const plugin_JSfile = 'main/StationLogo/updateStationLogo.js'
 const plugin_name = 'Station Logo';
@@ -149,6 +149,8 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
 
         // Define paths to check for the logo
         const localPaths = enableSearchLocal ? [
+		    `${localpath}${piCode}_${formattedProgram}.svg`,
+            `${localpath}${piCode}_${formattedProgram}.png`,
             `${localpath}${piCode}.gif`,
             `${localpath}${piCode}.svg`,
             `${localpath}${piCode}.png`
