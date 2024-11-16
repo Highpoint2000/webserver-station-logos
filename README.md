@@ -8,7 +8,8 @@ This script provides a logo for identified radio stations.
 
 
 ## v3.4a:
-- added Program Name Search (PI_PS.svg/.png) for local directory 
+- Added Program Name Search (PI_PS.svg/.png) for local directory 
+- Implemented handling of special characters in program names  (Everything must be in capital letters and without spaces or special characters!)
 
 ## Installation notes:
 
