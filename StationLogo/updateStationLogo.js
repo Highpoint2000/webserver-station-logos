@@ -14,7 +14,7 @@
 
 ///  This plugin only works from web server version 1.2.6!!!
 
-const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
+const enableSearchLocal = true; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 const updateInfo = true; 					// Enable or disable daily versions check for admin login
@@ -145,8 +145,8 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
         logoImage.attr('data-frequenz', frequenz);
         logoImage.attr('title', `Plugin Version: ${plugin_version}`);
 
-        let formattedProgram = Program.toUpperCase().replace(/\s+/g, '');
-
+        let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
+console.log(formattedProgram);
         // Define paths to check for the logo
         const localPaths = enableSearchLocal ? [
 		    `${localpath}${piCode}_${formattedProgram}.svg`,
@@ -240,7 +240,7 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
 async function checkRemotePaths(Program, ituCode, piCode) {
 
     const logoDirectoryUrl = `${serverpath}/logo_directory.html?nocache=${Date.now()}`;
-    let formattedProgram = Program.toUpperCase().replace(/\s+/g, '');
+    let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
 
     try {
         const response = await fetch(logoDirectoryUrl);
