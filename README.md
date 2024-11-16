@@ -7,9 +7,8 @@ This script provides a logo for identified radio stations.
 
 
 
-## v3.4:
-- Server request via directory file (faster and no error messages)
-- Daily update check for admin login installed
+## v3.4a:
+- added Program Name Search (PI_PS.svg/.png) for local directory 
 
 ## Installation notes:
 
@@ -41,6 +40,10 @@ For missing or incorrect logos, please use the integrated Google search function
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
 ## History:
+
+### v3.4:
+- Server request via directory file (faster and no error messages)
+- Daily update check for admin login installed
 
 ### v3.3b:
 - Improved cors proxy mechanism
