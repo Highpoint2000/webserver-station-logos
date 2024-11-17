@@ -1,14 +1,14 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4a)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4b)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 16.11.24     ///
+///                                                   	 last update: 17.11.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ const updateInfo = true; 					// Enable or disable daily versions check for admi
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4a';
+const plugin_version = '3.4b';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
 const plugin_JSfile = 'main/StationLogo/updateStationLogo.js'
 const plugin_name = 'Station Logo';
@@ -146,15 +146,16 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
         logoImage.attr('title', `Plugin Version: ${plugin_version}`);
 
         let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
-console.log(formattedProgram);
+		console.log(formattedProgram);
         // Define paths to check for the logo
-        const localPaths = enableSearchLocal ? [
-		    `${localpath}${piCode}_${formattedProgram}.svg`,
-            `${localpath}${piCode}_${formattedProgram}.png`,
-            `${localpath}${piCode}.gif`,
-            `${localpath}${piCode}.svg`,
-            `${localpath}${piCode}.png`
-        ] : [];
+		const localPaths = enableSearchLocal ? [
+			`${localpath}${piCode}_${formattedProgram}.svg` !== `${localpath}${piCode}_.svg` ? `${localpath}${piCode}_${formattedProgram}.svg` : null,
+			`${localpath}${piCode}_${formattedProgram}.png` !== `${localpath}${piCode}_.png` ? `${localpath}${piCode}_${formattedProgram}.png` : null,
+			`${localpath}${piCode}.gif`,
+			`${localpath}${piCode}.svg`,
+			`${localpath}${piCode}.png`
+		].filter(path => path !== null) : [];
+
 
         // Ensure checked paths are initialized for the current frequency
         if (!checkedPathsPerFrequency[frequenz]) {
@@ -276,7 +277,7 @@ async function checkRemotePaths(Program, ituCode, piCode) {
 
             if (fileElement) {
                 // Prevent duplicate or missing slashes in the URL
-                const remotePath = `${serverpath}/${ituCode}/${fileElement.textContent}`.replace(/\/+/g, '/');
+                const remotePath = `${serverpath}/${ituCode}/${fileElement.textContent}`;
                 console.log(`Logo found in remote directory: ${remotePath}`);
                 // Logo found, update the image
                 logoLoadedForCurrentFrequenz = true;
