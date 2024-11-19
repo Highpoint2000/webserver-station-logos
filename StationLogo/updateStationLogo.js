@@ -1,14 +1,14 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4b)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4c)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 17.11.24     ///
+///                                                   	 last update: 18.11.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ const updateInfo = true; 					// Enable or disable daily versions check for admi
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4b';
+const plugin_version = '3.4c';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
 const plugin_JSfile = 'main/StationLogo/updateStationLogo.js'
 const plugin_name = 'Station Logo';
@@ -146,7 +146,9 @@ function updateStationLogo(piCode, ituCode, Program, frequenz) {
         logoImage.attr('title', `Plugin Version: ${plugin_version}`);
 
         let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
-		console.log(formattedProgram);
+		if (formattedProgram !== "") {
+			console.log(formattedProgram);
+		}
         // Define paths to check for the logo
 		const localPaths = enableSearchLocal ? [
 			`${localpath}${piCode}_${formattedProgram}.svg` !== `${localpath}${piCode}_.svg` ? `${localpath}${piCode}_${formattedProgram}.svg` : null,
@@ -460,27 +462,14 @@ async function OnlineradioboxSearch(Program, ituCode, piCode) {
 // Load the countryList JavaScript from an external source
 $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
 
- // Function to check if the notification was shown today
-  function shouldShowNotification() {
-    const lastNotificationDate = localStorage.getItem(PluginUpdateKey);
-    const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
-
-    if (lastNotificationDate === today) {
-      return false; // Notification already shown today
-    }
-    // Update the date in localStorage to today
-    localStorage.setItem(PluginUpdateKey, today);
-    return true;
-  }
-
-  // Function to check plugin version
+   // Function to check plugin version
   function checkPluginVersion() {
     // Fetch and evaluate the plugin script
     fetch(`${plugin_path}${plugin_JSfile}`)
       .then(response => response.text())
       .then(script => {
         // Search for plugin_version in the external script
-        const pluginVersionMatch = script.match(/const plugin_version = '([\d.]+[a-z]*)';/);
+        const pluginVersionMatch = script.match(/const plugin_version = '([\d.]+[a-z]*)?';/);
         if (!pluginVersionMatch) {
           console.error(`${plugin_name}: Plugin version could not be found`);
           return;
@@ -491,11 +480,11 @@ $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
         // Function to compare versions
 		function compareVersions(local, remote) {
 			const parseVersion = (version) =>
-			version.split(/(\d+|[a-z]+)/).filter(Boolean).map((part) => (isNaN(part) ? part : parseInt(part, 10)));
+				version.split(/(\d+|[a-z]+)/i).filter(Boolean).map((part) => (isNaN(part) ? part : parseInt(part, 10)));
 
 			const localParts = parseVersion(local);
 			const remoteParts = parseVersion(remote);
-	
+
 			for (let i = 0; i < Math.max(localParts.length, remoteParts.length); i++) {
 				const localPart = localParts[i] || 0; // Default to 0 if part is missing
 				const remotePart = remoteParts[i] || 0;
@@ -504,15 +493,18 @@ $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
 					if (localPart > remotePart) return 1;
 					if (localPart < remotePart) return -1;
 				} else if (typeof localPart === 'string' && typeof remotePart === 'string') {
+					// Lexicographical comparison for strings
 					if (localPart > remotePart) return 1;
 					if (localPart < remotePart) return -1;
 				} else {
-					return typeof localPart === 'number' ? -1 : 1; // Numeric parts are "less than" string parts
+					// Numeric parts are "less than" string parts (e.g., `3.5` < `3.5a`)
+					return typeof localPart === 'number' ? -1 : 1;
 				}
 			}
 
 			return 0; // Versions are equal
 		}
+
 
         // Check version and show notification if needed
         const comparisonResult = compareVersions(plugin_version, externalPluginVersion);
