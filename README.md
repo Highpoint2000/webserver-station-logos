@@ -6,8 +6,8 @@ This script provides a logo for identified radio stations.
 
 
 
-## v3.4b:
-- Added support for Proxy and VPN-Connections
+## v3.4c:
+- Removed unnecessary console output
 
 
 ## Installation notes:
@@ -40,6 +40,10 @@ For missing or incorrect logos, please use the integrated Google search function
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
 ## History:
+
+### v3.4b:
+- Added support for Proxy and VPN-Connections
+
 
 ### v3.4a:
 - Added Program Name Search (PI_PROGRAMNAME.svg/.png) for local directory 
