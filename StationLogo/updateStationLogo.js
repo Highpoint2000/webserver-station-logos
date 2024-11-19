@@ -28,7 +28,6 @@ const plugin_JSfile = 'main/StationLogo/updateStationLogo.js';
 const plugin_name = 'Station Logo';
 	
 let isTuneAuthenticated;
-const PluginUpdateKey = `${plugin_name}_lastUpdateNotification`; // Unique key for localStorage
 	
 //////////////// Insert logo code for desktop devices ////////////////////////
 
@@ -469,7 +468,22 @@ async function OnlineradioboxSearch(Program, ituCode, piCode) {
 // Load the countryList JavaScript from an external source
 $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
 
-   // Function to check plugin version
+  const PluginUpdateKey = `${plugin_name}_lastUpdateNotification`; // Unique key for localStorage
+
+  // Function to check if the notification was shown today
+  function shouldShowNotification() {
+    const lastNotificationDate = localStorage.getItem(PluginUpdateKey);
+    const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+
+    if (lastNotificationDate === today) {
+      return false; // Notification already shown today
+    }
+    // Update the date in localStorage to today
+    localStorage.setItem(PluginUpdateKey, today);
+    return true;
+  }
+
+  // Function to check plugin version
   function checkPluginVersion() {
     // Fetch and evaluate the plugin script
     fetch(`${plugin_path}${plugin_JSfile}`)
@@ -533,6 +547,7 @@ $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
         console.error(`${plugin_name}: Error fetching the plugin script:`, error);
       });
 	}
+  
   
     // Function to check if the user is logged in as an administrator
     function checkAdminMode() {
