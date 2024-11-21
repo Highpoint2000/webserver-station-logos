@@ -1,14 +1,14 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4c)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4d)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 20.11.24     ///
+///                                                   	 last update: 21.11.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ const updateInfo = true; 					// Enable or disable daily versions check for admi
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4c';
+const plugin_version = '3.4cd';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
 const plugin_JSfile = 'main/StationLogo/updateStationLogo.js';
 const plugin_name = 'Station Logo';
@@ -127,6 +127,16 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
     if (ituCode === '' || ituCode.includes('?')) {
         ituCode = '?';
     }
+	
+	if (piCode !== oldPiCode && updateLogoOnPiCodeChange) {
+		// Wait for 1.5 seconds before checking the condition again
+		setTimeout(() => {
+			if (piCode !== oldPiCode && updateLogoOnPiCodeChange) {
+				logoLoadedForCurrentFrequency = false;
+				defaultLogoLoadedForFrequency[frequency] = false;
+			}
+		}, 1500);
+	}
 
     // Check if the frequency has changed
     if (frequency !== currentFrequency) {
@@ -134,6 +144,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
         logoLoadedForCurrentFrequency = false; // Reset variable on frequency change
         // Clear checked paths for the new frequency
         checkedPathsPerFrequency[frequency] = new Set();
+		defaultLogoLoadedForFrequency[frequency] = false;
     }
 
     // Only load the logo if the frequency has changed or if the PI code, ITU code, or Program have changed
@@ -145,10 +156,11 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
         logoImage.attr('data-frequency', frequency);
         logoImage.attr('title', `Plugin Version: ${plugin_version}`);
 
-        let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
-        if (formattedProgram !== "") {
-            console.log(formattedProgram);
-        }
+		let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
+		let formattedpiCode = piCode.toUpperCase();
+		if (formattedProgram !== "") {
+			console.log(formattedpiCode + '_' + formattedProgram + '.svg or ' + formattedpiCode + '_' + formattedProgram + '.png');
+		}
 
         // Define paths to check for the logo
         const localPaths = enableSearchLocal ? [
@@ -204,7 +216,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
             checkPaths(pathsToCheck, null, function() {
                 // If no local path has the logo, proceed with remote checks
                 if (piCode !== '?' && ituCode !== '?') {
-                    const remoteLogo = checkRemotePaths(Program, ituCode, piCode);
+                    const remoteLogo = checkRemotePaths(Program, ituCode, piCode, frequency);
                     if (remoteLogo) {
                         if (Program !== oldProgram) {
                             LogoSearch(piCode, ituCode, Program);
@@ -213,17 +225,6 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
                         return; // Abort further checks
                     }
 
-                    // If no logo is found, set default logo only once per frequency
-                    if (!defaultLogoLoadedForFrequency[frequency]) {
-                        logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-                        defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
-                        console.log("Default logo loaded for frequency:", frequency);
-                    }
-
-                    if (enableOnlineradioboxSearch) {
-                        OnlineradioboxSearch(Program, ituCode, piCode);
-                        logoLoadedForCurrentFrequency = true;
-                    }
                     logoLoadingInProgress = false;
                 } else {
                     if (!defaultLogoLoadedForFrequency[frequency]) {
@@ -246,7 +247,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
 }
 
 // Function to retrieve remotePaths from logo_directory.html
-async function checkRemotePaths(Program, ituCode, piCode) {
+async function checkRemotePaths(Program, ituCode, piCode, frequency) {
 
     const logoDirectoryUrl = `${serverpath}/logo_directory.html?nocache=${Date.now()}`;
     let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
@@ -285,25 +286,29 @@ async function checkRemotePaths(Program, ituCode, piCode) {
 
             if (fileElement) {
                 // Prevent duplicate or missing slashes in the URL
-                const remotePath = `${serverpath}/${ituCode}/${fileElement.textContent}`;
+                const remotePath = `${serverpath}${ituCode}/${fileElement.textContent}`;
                 console.log(`Logo found in remote directory: ${remotePath}`);
                 // Logo found, update the image
-				logoLoadedForCurrentFrequency = true;
                 logoImage.attr('src', remotePath).attr('alt', 'Station Logo').css('cursor', 'pointer');
+				logoLoadedForCurrentFrequency = true;
                 return; // Return the found logo URL
             }
         }
-
-        // If no matching file is found, set the default logo
-        console.log(`No logo found in remote directory`);
-        logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-        
+					
         // If no logo is found, perform the Online Radio Box search
-        if (enableOnlineradioboxSearch) {
+        if (enableOnlineradioboxSearch && !logoLoadedForCurrentFrequency) {
             OnlineradioboxSearch(Program, ituCode, piCode);
             logoLoadedForCurrentFrequency = true; // Mark that the logo has been loaded
+			return;
         }
-        return null; // No logo URL found, return null
+        
+		if (!defaultLogoLoadedForFrequency[frequency] && !logoLoadedForCurrentFrequency) {
+            logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
+            defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
+            console.log("Default logo loaded for frequency:", frequency);
+        }
+		
+		return null; // No logo URL found, return null
 
     } catch (error) {
         console.error('Error while fetching and parsing logo_directory.html:', error);
