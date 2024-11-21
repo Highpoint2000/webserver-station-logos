@@ -22,7 +22,7 @@ const updateInfo = true; 					// Enable or disable daily versions check for admi
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4cd';
+const plugin_version = '3.4d';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
 const plugin_JSfile = 'main/StationLogo/updateStationLogo.js';
 const plugin_name = 'Station Logo';
