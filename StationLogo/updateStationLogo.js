@@ -230,33 +230,42 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
                     logoLoadingInProgress = false;
                 } else {
                     if (!defaultLogoLoadedForFrequency[frequency]) {
-                        // Check if defaultLocalPath exists
-                        fetch(defaultLocalPath, { method: 'HEAD' })
-                            .then(response => {
-                                if (response.ok) {
-                                    // Local file exists
-                                    logoImage.attr('src', defaultLocalPath)
-                                        .attr('alt', 'Default Local Logo')
-                                        .css('cursor', 'auto');
-                                } else {
-                                    // Local file does not exist, load from server
+                        if (enableSearchLocal) {
+                            // Check if defaultLocalPath exists
+                            fetch(defaultLocalPath, { method: 'HEAD' })
+                                .then(response => {
+                                    if (response.ok) {
+                                        // Local file exists
+                                        logoImage.attr('src', defaultLocalPath)
+                                            .attr('alt', 'Default Local Logo')
+                                            .css('cursor', 'auto');
+                                    } else {
+                                        // Local file does not exist, load from server
+                                        logoImage.attr('src', defaultServerPath)
+                                            .attr('alt', 'Default Server Logo')
+                                            .css('cursor', 'auto');
+                                    }
+                                    defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
+                                })
+                                .catch(error => {
+                                    // In case of an error, also load the server logo
+                                    console.error("Error checking local path:", error);
                                     logoImage.attr('src', defaultServerPath)
                                         .attr('alt', 'Default Server Logo')
                                         .css('cursor', 'auto');
-                                }
-                                defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
-                            })
-                            .catch(error => {
-                                // In case of an error, also load the server logo
-                                console.error("Error checking local path:", error);
-                                logoImage.attr('src', defaultServerPath)
-                                    .attr('alt', 'Default Server Logo')
-                                    .css('cursor', 'auto');
-                                defaultLogoLoadedForFrequency[frequency] = true;
-                            })
-                            .finally(() => {
-                                logoLoadingInProgress = false;
-                            });
+                                    defaultLogoLoadedForFrequency[frequency] = true;
+                                })
+                                .finally(() => {
+                                    logoLoadingInProgress = false;
+                                });
+                        } else {
+                            // Skip local check and use server logo
+                            logoImage.attr('src', defaultServerPath)
+                                .attr('alt', 'Default Server Logo')
+                                .css('cursor', 'auto');
+                            defaultLogoLoadedForFrequency[frequency] = true;
+                            logoLoadingInProgress = false;
+                        }
                     } else {
                         logoLoadingInProgress = false;
                     }
@@ -264,33 +273,42 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
             }, false);
         } else {
             if (!defaultLogoLoadedForFrequency[frequency]) {
-                // Check if defaultLocalPath exists
-                fetch(defaultLocalPath, { method: 'HEAD' })
-                    .then(response => {
-                        if (response.ok) {
-                            // Local file exists
-                            logoImage.attr('src', defaultLocalPath)
-                                .attr('alt', 'Default Local Logo')
-                                .css('cursor', 'auto');
-                        } else {
-                            // Local file does not exist, load from server
+                if (enableSearchLocal) {
+                    // Check if defaultLocalPath exists
+                    fetch(defaultLocalPath, { method: 'HEAD' })
+                        .then(response => {
+                            if (response.ok) {
+                                // Local file exists
+                                logoImage.attr('src', defaultLocalPath)
+                                    .attr('alt', 'Default Local Logo')
+                                    .css('cursor', 'auto');
+                            } else {
+                                // Local file does not exist, load from server
+                                logoImage.attr('src', defaultServerPath)
+                                    .attr('alt', 'Default Server Logo')
+                                    .css('cursor', 'auto');
+                            }
+                            defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
+                        })
+                        .catch(error => {
+                            // In case of an error, also load the server logo
+                            console.error("Error checking local path:", error);
                             logoImage.attr('src', defaultServerPath)
                                 .attr('alt', 'Default Server Logo')
                                 .css('cursor', 'auto');
-                        }
-                        defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
-                    })
-                    .catch(error => {
-                        // In case of an error, also load the server logo
-                        console.error("Error checking local path:", error);
-                        logoImage.attr('src', defaultServerPath)
-                            .attr('alt', 'Default Server Logo')
-                            .css('cursor', 'auto');
-                        defaultLogoLoadedForFrequency[frequency] = true;
-                    })
-                    .finally(() => {
-                        logoLoadingInProgress = false;
-                    });
+                            defaultLogoLoadedForFrequency[frequency] = true;
+                        })
+                        .finally(() => {
+                            logoLoadingInProgress = false;
+                        });
+                } else {
+                    // Skip local check and use server logo
+                    logoImage.attr('src', defaultServerPath)
+                        .attr('alt', 'Default Server Logo')
+                        .css('cursor', 'auto');
+                    defaultLogoLoadedForFrequency[frequency] = true;
+                    logoLoadingInProgress = false;
+                }
             } else {
                 logoLoadingInProgress = false;
             }
