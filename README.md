@@ -5,11 +5,9 @@ This script provides a logo for identified radio stations.
 ![image](https://github.com/user-attachments/assets/db9c267c-bf2b-45bd-9c99-d030a80e60f8)
 
 
-## v3.4d:
+## v3.4e:
 
-- Added console output for Program Name Search (PI_PROGRAMNAME.svg/.png)
-- Problems with quick PI code changes fixed 
-- minor code optimizations
+- Added local search for default-logo.png
 
 
 ## Installation notes:
@@ -42,6 +40,12 @@ For missing or incorrect logos, please use the integrated Google search function
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
 ## History:
+
+### v3.4d:
+
+- Added console output for Program Name Search (PI_PROGRAMNAME.svg/.png)
+- Problems with quick PI code changes fixed 
+- minor code optimizations
 
 ### v3.4c:
 - Removed unnecessary console output
