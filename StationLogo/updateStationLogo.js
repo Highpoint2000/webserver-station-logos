@@ -1,14 +1,14 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4e)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4f)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 04.12.24     ///
+///                                                   	 last update: 20.02.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ const updateInfo = true; 					// Enable or disable daily versions check for admi
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4e';
+const plugin_version = '3.4f';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
 const plugin_JSfile = 'main/StationLogo/updateStationLogo.js';
 const plugin_name = 'Station Logo';
@@ -417,34 +417,41 @@ setTimeout(() => {
 
 // Function to perform a Google search for station logos and handle results
 function LogoSearch(piCode, ituCode, Program) {
+    // Store parameters in local variables
     const currentPiCode = piCode;
     const currentStation = Program;
     const currentituCode = ituCode;
     const tooltipContainer = $('.panel-30');
 
-    // Debugging information
-    // console.log("currentituCode:", currentituCode);
-    // console.log("currentStation:", currentStation);
-
-    // If piCode, ituCode, and Program are present, enable these commands
+    // If both the ITU code and station name are provided, proceed with the commands
     if (currentituCode !== '' && currentStation !== '') {
-        const countryName = getCountryNameByItuCode(ituCode); // Retrieve the country name for the ITU code
-        const ituCodeCurrentStation = `${currentStation} ${countryName}`; // Add the country name to the current station
+        // Retrieve the country name based on the ITU code
+        const countryName = getCountryNameByItuCode(ituCode);
+        // Combine the station name with the country name
+        const ituCodeCurrentStation = `${currentStation} ${countryName}`;
+        // Construct the search query for Google with specified file types and additional parameters
         const searchQuery = `${ituCodeCurrentStation} filetype:png OR filetype:svg Radio&tbs=sbd:1&udm=2`;
         console.log("Search query:", searchQuery);
-		tooltipContainer.css('background-color', 'var(--color-2-transparent)').off('click').on('click', () => {
-			console.log('Opening URL:', 'https://www.google.com/search?q=' + searchQuery);
-			window.location.href = 'https://www.google.com/search?q=' + searchQuery;
-		});
 
-        // Set the cursor to pointer
+        // Update the tooltip container style and assign a click event handler
+        tooltipContainer
+            .css('background-color', 'var(--color-2-transparent)')
+            .off('click')
+            .on('click', () => {
+                console.log('Opening URL:', 'https://www.google.com/search?q=' + searchQuery);
+                // Open the search URL in a new window or tab
+                window.open('https://www.google.com/search?q=' + searchQuery, '_blank');
+            });
+
+        // Change the cursor to pointer to indicate the element is clickable
         logoImage.css('cursor', 'pointer');
-        logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded
+        logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded for the current frequency
     } else {
-        // Set the cursor to auto if no valid search query is formed
+        // Set the cursor to auto if no valid search query can be formed
         logoImage.css('cursor', 'auto');
     }
 }
+
 
 // Function to get the country name by ITU code
 function getCountryNameByItuCode(ituCode) {
