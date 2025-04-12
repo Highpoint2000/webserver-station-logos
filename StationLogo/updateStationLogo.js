@@ -1,18 +1,16 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4f)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4g)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 20.02.24     ///
+///                                                   	 last update: 12.04.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
-
-///  This plugin only works from web server version 1.2.6!!!
 
 const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
@@ -22,7 +20,7 @@ const updateInfo = true; 					// Enable or disable daily versions check for admi
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4f';
+const plugin_version = '3.4g';
 const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
 const plugin_JSfile = 'main/StationLogo/updateStationLogo.js';
 const plugin_name = 'Station Logo';
@@ -95,9 +93,8 @@ const defaultLocalPath = localpath + 'default-logo.png';
 const defaultServerPath = serverpath + 'default-logo.png';
 const emptyServerPath = serverpath + 'empty-logo.png';
 
-// Determine the logo image element based on the device type
 var logoImage;
-if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+if (window.innerWidth < 768) {
     logoImage = $('#station-logo-phone');
 } else {
     logoImage = $('#station-logo');
@@ -445,7 +442,7 @@ function LogoSearch(piCode, ituCode, Program) {
 
         // Change the cursor to pointer to indicate the element is clickable
         logoImage.css('cursor', 'pointer');
-        logoLoadedForCurrentFrequenz = true; // Mark that the logo has been loaded for the current frequency
+        logoLoadedForCurrentFrequency = true; // Mark that the logo has been loaded for the current frequency
     } else {
         // Set the cursor to auto if no valid search query can be formed
         logoImage.css('cursor', 'auto');
