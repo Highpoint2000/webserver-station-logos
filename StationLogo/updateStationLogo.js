@@ -1,39 +1,131 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.4g)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.5)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 12.04.24     ///
+///                                                   	 last update: 05.06.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
 const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
-const enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
+const enableOnlineradioboxSearch = false; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
-const updateInfo = true; 					// Enable or disable daily versions check for admin login
+
+const pluginSetupOnlyNotify = true;		
+const CHECK_FOR_UPDATES = true;; 					
 
 //////////////////////////////////////////////////////////////////////////////////////
    
 // Define local version and Github settings
-const plugin_version = '3.4g';
-const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/webserver-station-logos/';
-const plugin_JSfile = 'main/StationLogo/updateStationLogo.js';
-const plugin_name = 'Station Logo';
-	
+
+const pluginVersion = '3.5';
+const pluginName = "Station Logo";
+const pluginHomepageUrl = "https://github.com/Highpoint2000/webserver-station-logos/releases";
+const pluginUpdateUrl = "https://raw.githubusercontent.com/Highpoint2000/webserver-station-logos/main/StationLogo/updateStationLogo.js";
+
 let isTuneAuthenticated;
 	
+// Function for update notification in /setup
+function checkUpdate(setupOnly, pluginName, urlUpdateLink, urlFetchLink) {
+	
+    if (setupOnly && window.location.pathname !== '/setup') return;
+    let pluginVersionCheck = typeof pluginVersion !== 'undefined' ? pluginVersion : typeof plugin_version !== 'undefined' ? plugin_version : typeof PLUGIN_VERSION !== 'undefined' ? PLUGIN_VERSION : 'Unknown';
+
+    // Function to check for updates
+    async function fetchFirstLine() {
+        const urlCheckForUpdate = urlFetchLink;
+
+        try {
+            const response = await fetch(urlCheckForUpdate);
+            if (!response.ok) {
+                throw new Error(`[${pluginName}] update check HTTP error! status: ${response.status}`);
+            }
+
+            const text = await response.text();
+            const lines = text.split('\n');
+
+            let version;
+
+            if (lines.length > 2) {
+                const versionLine = lines.find(line => line.includes("const pluginVersion =") || line.includes("const plugin_version =") || line.includes("const PLUGIN_VERSION ="));
+                if (versionLine) {
+                    const match = versionLine.match(/const\s+(?:pluginVersion|plugin_version|PLUGIN_VERSION)\s*=\s*['"]([^'"]+)['"]/);
+                    if (match) {
+                        version = match[1];
+                    }
+                }
+            }
+
+            if (!version) {
+                const firstLine = lines[0].trim();
+                version = /^\d/.test(firstLine) ? firstLine : "Unknown"; // Check if first character is a number
+            }
+
+            return version;
+        } catch (error) {
+            console.error(`[${pluginName}] error fetching file:`, error);
+            return null;
+        }
+    }
+
+    // Check for updates
+    fetchFirstLine().then(newVersion => {
+        if (newVersion) {
+            if (newVersion !== pluginVersionCheck) {
+                let updateConsoleText = "There is a new version of this plugin available";
+                // Any custom code here
+                
+                console.log(`[${pluginName}] ${updateConsoleText}`);
+                setupNotify(pluginVersionCheck, newVersion, pluginName, urlUpdateLink);
+            }
+        }
+    });
+
+    function setupNotify(pluginVersionCheck, newVersion, pluginName, urlUpdateLink) {
+        if (window.location.pathname === '/setup') {
+          const pluginSettings = document.getElementById('plugin-settings');
+          if (pluginSettings) {
+            const currentText = pluginSettings.textContent.trim();
+            const newText = `<a href="${urlUpdateLink}" target="_blank">[${pluginName}] Update available: ${pluginVersionCheck} --> ${newVersion}</a><br>`;
+
+            if (currentText === 'No plugin settings are available.') {
+              pluginSettings.innerHTML = newText;
+            } else {
+              pluginSettings.innerHTML += ' ' + newText;
+            }
+          }
+
+          const updateIcon = document.querySelector('.wrapper-outer #navigation .sidenav-content .fa-puzzle-piece') || document.querySelector('.wrapper-outer .sidenav-content') || document.querySelector('.sidenav-content');
+
+          const redDot = document.createElement('span');
+          redDot.style.display = 'block';
+          redDot.style.width = '12px';
+          redDot.style.height = '12px';
+          redDot.style.borderRadius = '50%';
+          redDot.style.backgroundColor = '#FE0830' || 'var(--color-main-bright)'; // Theme colour set here as placeholder only
+          redDot.style.marginLeft = '82px';
+          redDot.style.marginTop = '-12px';
+
+          updateIcon.appendChild(redDot);
+        }
+    }
+}
+
+if (CHECK_FOR_UPDATES) checkUpdate(pluginSetupOnlyNotify, pluginName, pluginHomepageUrl, pluginUpdateUrl);
+
+
 //////////////// Insert logo code for desktop devices ////////////////////////
 
 // Define the HTML code as a string for the logo container
 var LogoContainerHtml = '<div style="width: 5%;"></div> <!-- Spacer -->' +
     '<div class="panel-30 m-0 hide-phone" style="width: 48%" >' +
     '    <div id="logo-container-desktop" style="width: 215px; height: 60px; display: flex; justify-content: center; align-items: center; margin: auto;">' +
-    '        <img id="station-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-desktop" style="max-width: 140px; padding: 1px 2px; max-height: 100%; margin-top: 30px; display: block; cursor: pointer;">' +
+    '        <img id="station-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-desktop" style="max-width: 140px; max-height: 100%; margin-top: 30px; display: block; cursor: pointer;">' +
     '    </div>' +
     '</div>';
 // Insert the new HTML code after the named <div>
@@ -153,7 +245,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
         logoImage.attr('data-itucode', ituCode);
         logoImage.attr('data-Program', Program);
         logoImage.attr('data-frequency', frequency);
-        logoImage.attr('title', `Plugin Version: ${plugin_version}`);
+        logoImage.attr('title', `Plugin Version: ${pluginVersion}`);
 
         let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
         let formattedpiCode = piCode.toUpperCase();
@@ -213,6 +305,11 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
 
         if (piCode !== '?') {
             checkPaths(pathsToCheck, null, function() {
+				
+				if (ituCode.includes("USA")) {							
+					ituCode = 'USA';
+				}
+				
                 // If no local path has the logo, proceed with remote checks
                 if (piCode !== '?' && ituCode !== '?') {
                     const remoteLogo = checkRemotePaths(Program, ituCode, piCode, frequency);
@@ -547,87 +644,6 @@ async function OnlineradioboxSearch(Program, ituCode, piCode) {
 // Load the countryList JavaScript from an external source
 $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
 
-  const PluginUpdateKey = `${plugin_name}_lastUpdateNotification`; // Unique key for localStorage
-
-  // Function to check if the notification was shown today
-  function shouldShowNotification() {
-    const lastNotificationDate = localStorage.getItem(PluginUpdateKey);
-    const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
-
-    if (lastNotificationDate === today) {
-      return false; // Notification already shown today
-    }
-    // Update the date in localStorage to today
-    localStorage.setItem(PluginUpdateKey, today);
-    return true;
-  }
-
-  // Function to check plugin version
-  function checkPluginVersion() {
-    // Fetch and evaluate the plugin script
-    fetch(`${plugin_path}${plugin_JSfile}`)
-      .then(response => response.text())
-      .then(script => {
-        // Search for plugin_version in the external script
-        const pluginVersionMatch = script.match(/const plugin_version = '([\d.]+[a-z]*)?';/);
-        if (!pluginVersionMatch) {
-          console.error(`${plugin_name}: Plugin version could not be found`);
-          return;
-        }
-
-        const externalPluginVersion = pluginVersionMatch[1];
-
-        // Function to compare versions
-		function compareVersions(local, remote) {
-			const parseVersion = (version) =>
-				version.split(/(\d+|[a-z]+)/i).filter(Boolean).map((part) => (isNaN(part) ? part : parseInt(part, 10)));
-
-			const localParts = parseVersion(local);
-			const remoteParts = parseVersion(remote);
-
-			for (let i = 0; i < Math.max(localParts.length, remoteParts.length); i++) {
-				const localPart = localParts[i] || 0; // Default to 0 if part is missing
-				const remotePart = remoteParts[i] || 0;
-
-				if (typeof localPart === 'number' && typeof remotePart === 'number') {
-					if (localPart > remotePart) return 1;
-					if (localPart < remotePart) return -1;
-				} else if (typeof localPart === 'string' && typeof remotePart === 'string') {
-					// Lexicographical comparison for strings
-					if (localPart > remotePart) return 1;
-					if (localPart < remotePart) return -1;
-				} else {
-					// Numeric parts are "less than" string parts (e.g., `3.5` < `3.5a`)
-					return typeof localPart === 'number' ? -1 : 1;
-				}
-			}
-
-			return 0; // Versions are equal
-		}
-
-
-        // Check version and show notification if needed
-        const comparisonResult = compareVersions(plugin_version, externalPluginVersion);
-        if (comparisonResult === 1) {
-          // Local version is newer than the external version
-          console.log(`${plugin_name}: The local version is newer than the plugin version.`);
-        } else if (comparisonResult === -1) {
-          // External version is newer and notification should be shown
-          if (shouldShowNotification()) {
-            console.log(`${plugin_name}: Plugin update available: ${plugin_version} -> ${externalPluginVersion}`);
-			sendToast('warning important', `${plugin_name}`, `Update available:<br>${plugin_version} -> ${externalPluginVersion}`, false, false);
-            }
-        } else {
-          // Versions are the same
-          console.log(`${plugin_name}: The local version matches the plugin version.`);
-        }
-      })
-      .catch(error => {
-        console.error(`${plugin_name}: Error fetching the plugin script:`, error);
-      });
-	}
-  
-  
     // Function to check if the user is logged in as an administrator
     function checkAdminMode() {
         const bodyText = document.body.textContent || document.body.innerText;
@@ -640,13 +656,5 @@ $.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
     }
 	
 	checkAdminMode(); // Check admin mode
-
-  	setTimeout(() => {
-
-	// Execute the plugin version check if updateInfo is true and admin ist logged on
-	if (updateInfo && isTuneAuthenticated) {
-		checkPluginVersion();
-		}
-	}, 200);
 
 })();
