@@ -1,18 +1,18 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.5)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.6)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas and       /// 
 ///  design!                                                                       ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 05.06.24     ///
+///                                                   	 last update: 13.06.24     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
-const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
+const enableSearchLocal = true; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = false; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 
@@ -23,10 +23,20 @@ const CHECK_FOR_UPDATES = true;;
    
 // Define local version and Github settings
 
-const pluginVersion = '3.5';
+const pluginVersion = '3.6';
 const pluginName = "Station Logo";
 const pluginHomepageUrl = "https://github.com/Highpoint2000/webserver-station-logos/releases";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/Highpoint2000/webserver-station-logos/main/StationLogo/updateStationLogo.js";
+const countryListUrl = 'https://tef.noobish.eu/logos/scripts/js/countryList.js';
+
+window.countryList = window.countryList || [];
+$.getScript(countryListUrl)
+  .done(() => console.log('countryList loaded successfully.'))
+  .fail(() => {
+    console.error('Failed to load countryList – falling back to empty list.');
+    window.countryList = []; // ensure it's still an array
+	
+  });
 
 let isTuneAuthenticated;
 	
@@ -488,25 +498,57 @@ async function checkRemotePaths(Program, ituCode, piCode, frequency) {
 }
 
 
-// Function to wait for the server to define the socket and handle incoming messages
+// Gemeinsame Message-Handler-Funktion
+function handleSocketMessage(event) {
+    let parsedData = JSON.parse(event.data);
+    let piCode    = parsedData.pi.toUpperCase();
+    let ituCode   = parsedData.txInfo.itu.toUpperCase();
+    let Program   = parsedData.txInfo.tx.replace(/%/g, '%25');
+    let frequenz  = parsedData.freq;
+    updateStationLogo(piCode, ituCode, Program, frequenz);
+}
+
+// Initiales Aufsetzen: wartet auf socket, registriert Listener
 function waitForServer() {
-    if (typeof socket !== "undefined") {
-        window.socket.addEventListener("message", (event) => {
-            let parsedData = JSON.parse(event.data);
-            let piCode = parsedData.pi.toUpperCase();
-            let ituCode = parsedData.txInfo.itu.toUpperCase();
-            let Program = parsedData.txInfo.tx.replace(/%/g, '%25');
-            let frequenz = parsedData.freq;
-            updateStationLogo(piCode, ituCode, Program, frequenz);
-        });
-    } else {
+    if (typeof window.socket === "undefined") {
+        // noch kein socket vorhanden → retry
         setTimeout(waitForServer, 250);
+    } else {
+        // socket ist da, aber eventuell noch nicht offen
+        if (window.socket.readyState === WebSocket.OPEN) {
+            window.socket.addEventListener("message", handleSocketMessage);
+        } else {
+            // warte auf OPEN
+            window.socket.addEventListener("open", () => {
+                window.socket.addEventListener("message", handleSocketMessage);
+                console.log("WebSocket verbunden und Listener registriert.");
+            });
+        }
     }
 }
 
-setTimeout(() => {
-    waitForServer();
-}, 250); 
+// Periodische Prüfung und Reconnect
+const RECONNECT_INTERVAL = 5000; // ms
+setInterval(() => {
+    const s = window.socket;
+    // Zustand 1 = OPEN
+    if (!s || s.readyState !== WebSocket.OPEN) {
+        console.warn("WebSocket nicht offen (state=" + (s ? s.readyState : "undefined") + "), versuche reconnect…");
+        try {
+            // falls original-URL bekannt: reconnect
+            const url = s && s.url ? s.url : (`ws://${location.host}/ws`);
+            window.socket = new WebSocket(url);
+            waitForServer();
+        } catch (err) {
+            console.error("Reconnect fehlgeschlagen, lade Seite neu:", err);
+            location.reload();
+        }
+    }
+}, RECONNECT_INTERVAL);
+
+// Starte das Ganze
+waitForServer();
+
 
 
 // Function to perform a Google search for station logos and handle results
@@ -546,12 +588,17 @@ function LogoSearch(piCode, ituCode, Program) {
     }
 }
 
-
-// Function to get the country name by ITU code
 function getCountryNameByItuCode(ituCode) {
-    const country = countryList.find(item => item.itu_code === ituCode.toUpperCase());
+    // defensive check—if countryList isn't an array, bail out
+    if (!Array.isArray(window.countryList)) {
+        return "Country not found";
+    }
+    const country = window.countryList.find(
+      item => item.itu_code === ituCode.toUpperCase()
+    );
     return country ? country.country : "Country not found";
 }
+
 
 // Function to compare the current program with image titles and select the most similar image
 async function compareAndSelectImage(currentStation, imgSrcElements) {
@@ -640,9 +687,6 @@ async function OnlineradioboxSearch(Program, ituCode, piCode) {
 
     await parsePage(searchUrl, Program, ituCode, piCode);  // Forwarding of additional parameters
 }
-
-// Load the countryList JavaScript from an external source
-$.getScript('https://tef.noobish.eu/logos/scripts/js/countryList.js');
 
     // Function to check if the user is logged in as an administrator
     function checkAdminMode() {
