@@ -5,11 +5,9 @@ This script provides a logo for identified radio stations.
 ![image](https://github.com/user-attachments/assets/db9c267c-bf2b-45bd-9c99-d030a80e60f8)
 
 
-## v3.5:
+## v3.6:
 
-- Fixed logo display for identified US Stations
-- Updates are now displayed in Setup
-
+- automatic reconnect of the websocket built in (this could eliminate the hanging logo)
 
 ## Installation notes:
 
@@ -41,6 +39,11 @@ For missing or incorrect logos, please use the integrated Google search function
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
 ## History:
+
+### v3.5:
+
+- Fixed logo display for identified US Stations
+- Updates are now displayed in Setup
 
 ### v3.4g:
 
