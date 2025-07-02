@@ -517,21 +517,21 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function connectWebSocket_StationLogo() {
-    if (socket.readyState === WebSocket.OPEN) {
+    if (window.socket.readyState === WebSocket.OPEN) {
     }
 
-    socket.addEventListener('message', (event) => {
+    window.socket.addEventListener('message', (event) => {
         handleStationLogoUpdate(event);
     });
 
-    socket.addEventListener('close', () => {
+    window.socket.addEventListener('close', () => {
         setTimeout(() => {
             console.log('STATION_LOGO_UPDATER: WebSocket closed. Attempting to reconnect...');
         }, 100);
         attemptReconnect_StationLogo();
     });
 
-    socket.addEventListener('error', () => {
+    window.socket.addEventListener('error', () => {
         attemptReconnect_StationLogo();
     });
 }
