@@ -459,6 +459,7 @@ async function checkRemotePaths(Program, ituCode, piCode, frequency) {
             const fileElement = [...fileContainer.querySelectorAll('.file a')].find(file => file.textContent === fileName);
 
             if (fileElement) {
+                if (frequency && lastLogoState.frequenz && frequency !== lastLogoState.frequenz) return; // cancel displaying logo if frequency has been changed
                 // Prevent duplicate or missing slashes in the URL
                 const remotePath = `${serverpath}${ituCode}/${fileElement.textContent}`;
                 console.log(`Logo found in remote directory: ${remotePath}`);
@@ -498,56 +499,89 @@ async function checkRemotePaths(Program, ituCode, piCode, frequency) {
 }
 
 
-// Gemeinsame Message-Handler-Funktion
-function handleSocketMessage(event) {
-    let parsedData = JSON.parse(event.data);
-    let piCode    = parsedData.pi.toUpperCase();
-    let ituCode   = parsedData.txInfo.itu.toUpperCase();
-    let Program   = parsedData.txInfo.tx.replace(/%/g, '%25');
-    let frequenz  = parsedData.freq;
-    updateStationLogo(piCode, ituCode, Program, frequenz);
-}
+let lastLogoState = {
+    piCode: null,
+    ituCode: null,
+    Program: null,
+    frequenz: null,
+    psCode: null
+};
 
-// Initiales Aufsetzen: wartet auf socket, registriert Listener
-function waitForServer() {
-    if (typeof window.socket === "undefined") {
-        // noch kein socket vorhanden → retry
-        setTimeout(waitForServer, 250);
-    } else {
-        // socket ist da, aber eventuell noch nicht offen
-        if (window.socket.readyState === WebSocket.OPEN) {
-            window.socket.addEventListener("message", handleSocketMessage);
-        } else {
-            // warte auf OPEN
-            window.socket.addEventListener("open", () => {
-                window.socket.addEventListener("message", handleSocketMessage);
-                console.log("WebSocket verbunden und Listener registriert.");
-            });
-        }
-    }
-}
+let lastProcessedTime_Station = 0;
+let executeStationLogo = false;
 
-// Periodische Prüfung und Reconnect
-const RECONNECT_INTERVAL = 5000; // ms
-setInterval(() => {
-    const s = window.socket;
-    // Zustand 1 = OPEN
-    if (!s || s.readyState !== WebSocket.OPEN) {
-        console.warn("WebSocket nicht offen (state=" + (s ? s.readyState : "undefined") + "), versuche reconnect…");
+const TIMEOUT_DURATION_STATION = 75;
+
+window.addEventListener('DOMContentLoaded', () => {
+    executeStationLogo = true;
+    connectWebSocket_StationLogo();
+});
+
+function connectWebSocket_StationLogo() {
+    if (!window.socket || window.socket.readyState === WebSocket.CLOSED || window.socket.readyState === WebSocket.CLOSING) {
         try {
-            // falls original-URL bekannt: reconnect
-            const url = s && s.url ? s.url : (`ws://${location.host}/ws`);
-            window.socket = new WebSocket(url);
-            waitForServer();
-        } catch (err) {
-            console.error("Reconnect fehlgeschlagen, lade Seite neu:", err);
-            location.reload();
+            window.socket = new WebSocket(socketAddress);
+            console.log('Station Logo: Attempting to create WebSocket...');
+        } catch (e) {
+            console.error('Station Logo: Failed to create WebSocket:', e);
+            return;
         }
+    } else if (window.socket.readyState === WebSocket.OPEN) {
+        console.log('Station Logo: WebSocket already open.');
     }
-}, RECONNECT_INTERVAL);
 
-// Starte das Ganze
-waitForServer();
+    window.socket.removeEventListener('message', handleStationLogoUpdate);
+    window.socket.removeEventListener('close', onSocketClose);
+    window.socket.removeEventListener('error', onSocketError);
+
+    window.socket.addEventListener('message', handleStationLogoUpdate);
+    window.socket.addEventListener('close', onSocketClose);
+    window.socket.addEventListener('error', onSocketError);
+}
+
+function onSocketClose() {
+    setTimeout(() => {
+        console.log('Station Logo: WebSocket closed. Attempting to reconnect...');
+        connectWebSocket_StationLogo();
+    }, 10000);
+}
+
+function onSocketError() {
+    console.warn('Station Logo: WebSocket error. Attempting to reconnect...');
+    setTimeout(connectWebSocket_StationLogo, 10000);
+}
+
+function handleStationLogoUpdate(event) {
+    const now = Date.now();
+    if (now - lastProcessedTime_Station < TIMEOUT_DURATION_STATION) return;
+    lastProcessedTime_Station = now;
+
+    try {
+        const data = JSON.parse(event.data);
+        const piCode   = data.pi?.toUpperCase();
+        const ituCode  = data.txInfo?.itu?.toUpperCase();
+        const Program  = data.txInfo?.tx?.replace(/%/g, '%25');
+        const frequenz = data.freq;
+        const psCode   = data.ps;
+
+        if (
+            executeStationLogo && (
+                piCode !== lastLogoState.piCode ||
+                ituCode !== lastLogoState.ituCode ||
+                Program !== lastLogoState.Program ||
+                frequenz !== lastLogoState.frequenz ||
+                psCode !== lastLogoState.psCode
+            )
+        ) {
+            updateStationLogo(piCode, ituCode, Program, frequenz);
+            lastLogoState = { piCode, ituCode, Program, frequenz, psCode };
+        }
+
+    } catch (err) {
+        console.error('Station Logo: Failed to parse WebSocket message', err);
+    }
+}
+
 
 
 
