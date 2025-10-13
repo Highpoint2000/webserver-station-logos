@@ -1,18 +1,18 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.6a)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.6b)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas/design    /// 
 ///  and AmateurAudioDude for the code customizations!                             ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 04.07.24     ///
+///                                                   	 last update: 13.10.25     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
-const enableSearchLocal = false; 		// Enable or disable searching local paths (.../web/logos)
+const enableSearchLocal = true; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = false; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 
@@ -23,7 +23,7 @@ const CHECK_FOR_UPDATES = true;;
    
 // Define local version and Github settings
 
-const pluginVersion = '3.6a';
+const pluginVersion = '3.6b';
 const pluginName = "Station Logo";
 const pluginHomepageUrl = "https://github.com/Highpoint2000/webserver-station-logos/releases";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/Highpoint2000/webserver-station-logos/main/StationLogo/updateStationLogo.js";
@@ -31,12 +31,23 @@ const countryListUrl = 'https://tef.noobish.eu/logos/scripts/js/countryList.js';
 
 window.countryList = window.countryList || [];
 $.getScript(countryListUrl)
-  .done(() => console.log('countryList loaded successfully.'))
+  .done(() => {
+    console.log('countryList loaded successfully.');
+
+    // Falls countryList nicht global exportiert wurde, manuell übernehmen:
+    if (typeof countryList !== 'undefined' && (!window.countryList || window.countryList.length === 0)) {
+        window.countryList = countryList;
+        console.log(`countryList entries loaded: ${window.countryList.length}`);
+    }
+
+    window.countryListLoaded = true;
+  })
   .fail(() => {
     console.error('Failed to load countryList – falling back to empty list.');
-    window.countryList = []; // ensure it's still an array
-	
+    window.countryList = [];
+    window.countryListLoaded = false;
   });
+
 
 let isTuneAuthenticated;
 	

@@ -5,9 +5,9 @@ This script provides a logo for identified radio stations.
 ![image](https://github.com/user-attachments/assets/db9c267c-bf2b-45bd-9c99-d030a80e60f8)
 
 
-## v3.6a:
+## v3.6b:
 
-- Revised socket logic to avoid duplicate connections (thanks to AmateurAudioDude)
+- incorrect country corrected in Google search
 
 ## Installation notes:
 
@@ -39,6 +39,10 @@ For missing or incorrect logos, please use the integrated Google search function
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
 
 ## History:
+
+### v3.6a:
+
+- Revised socket logic to avoid duplicate connections (thanks to AmateurAudioDude)
 
 ### v3.6:
 
