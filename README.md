@@ -7,7 +7,7 @@ This script provides a logo for identified radio stations.
 
 ## v3.6b:
 
-- incorrect country corrected in Google search
+- incorrect country corrected in Google logo search
 
 ## Installation notes:
 
