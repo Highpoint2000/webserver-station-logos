@@ -5,9 +5,9 @@ This script provides a logo for identified radio stations.
 ![image](https://github.com/user-attachments/assets/db9c267c-bf2b-45bd-9c99-d030a80e60f8)
 
 
-## v3.6b:
+## v3.7:
 
-- incorrect country corrected in Google logo search
+- The use of the directory on the server has been removed; the logos are now loaded directly again.
 
 ## Installation notes:
 
@@ -44,6 +44,10 @@ If you have any questions, would like to report problems, or have suggestions fo
 
 <details>
 <summary>History</summary>
+
+### v3.6b:
+
+- incorrect country corrected in Google logo search
 
 ### v3.6a:
 

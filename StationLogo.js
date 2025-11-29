@@ -1,7 +1,7 @@
 // Plugin configuration, this is used in the administration when plugins are loaded
 var pluginConfig = {
     name: 'Station Logo Plugin',
-    version: '3.6b',
+    version: '3.7',
     author: 'Highpoint',
     frontEndPath: 'StationLogo/updateStationLogo.js'
 }

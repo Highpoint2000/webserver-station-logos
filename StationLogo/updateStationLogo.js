@@ -1,14 +1,14 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.6b)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.7)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas/design    /// 
 ///  and AmateurAudioDude for the code customizations!                             ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 13.10.25     ///
+///                                                   	 last update: 29.11.25     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -23,7 +23,7 @@ const CHECK_FOR_UPDATES = true;;
    
 // Define local version and Github settings
 
-const pluginVersion = '3.6b';
+const pluginVersion = '3.7';
 const pluginName = "Station Logo";
 const pluginHomepageUrl = "https://github.com/Highpoint2000/webserver-station-logos/releases";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/Highpoint2000/webserver-station-logos/main/StationLogo/updateStationLogo.js";
@@ -333,17 +333,31 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
 				
                 // If no local path has the logo, proceed with remote checks
                 if (piCode !== '?' && ituCode !== '?') {
-                    const remoteLogo = checkRemotePaths(Program, ituCode, piCode, frequency);
-                    if (remoteLogo) {
-                        if (Program !== oldProgram) {
-                            LogoSearch(piCode, ituCode, Program);
+                    // Modified checkRemotePaths call
+                    checkRemotePaths(Program, ituCode, piCode, frequency).then(remoteLogo => {
+                        if (remoteLogo) {
+                            if (Program !== oldProgram) {
+                                LogoSearch(piCode, ituCode, Program);
+                            }
+                            logoLoadingInProgress = false;
+                            return; // Abort further checks
                         }
-                        logoLoadingInProgress = false;
-                        return; // Abort further checks
-                    }
-
-                    logoLoadingInProgress = false;
+    
+                        // Fallback logic if remote path check returns null
+                        fallbackToDefaultOrOnlineSearch();
+                    });
                 } else {
+                    fallbackToDefaultOrOnlineSearch();
+                }
+
+                function fallbackToDefaultOrOnlineSearch() {
+                     if (enableOnlineradioboxSearch && !logoLoadedForCurrentFrequency) {
+                        OnlineradioboxSearch(Program, ituCode, piCode);
+                        logoLoadedForCurrentFrequency = true;
+                        logoLoadingInProgress = false;
+                        return;
+                    }
+                    
                     if (!defaultLogoLoadedForFrequency[frequency]) {
                         if (enableSearchLocal) {
                             // Check if defaultLocalPath exists
@@ -380,6 +394,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
                                 .css('cursor', 'auto');
                             defaultLogoLoadedForFrequency[frequency] = true;
                             logoLoadingInProgress = false;
+                            logoLoadingInProgress = false;
                         }
                     } else {
                         logoLoadingInProgress = false;
@@ -387,7 +402,8 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
                 }
             }, false);
         } else {
-            if (!defaultLogoLoadedForFrequency[frequency]) {
+             // ... logic for piCode === '?' (same as before) ...
+             if (!defaultLogoLoadedForFrequency[frequency]) {
                 if (enableSearchLocal) {
                     // Check if defaultLocalPath exists
                     fetch(defaultLocalPath, { method: 'HEAD' })
@@ -431,81 +447,67 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
     }
 }
 
-// Function to retrieve remotePaths from logo_directory.html
+// Function to check remote paths without directory listing
 async function checkRemotePaths(Program, ituCode, piCode, frequency) {
-
-    const logoDirectoryUrl = `${serverpath}/logo_directory.html?nocache=${Date.now()}`;
     let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
 
+    // Priority order: piCode_currentStation.svg > piCode_currentStation.png > piCode.svg > piCode.png
+    const priorityFiles = [
+        `${piCode}_${formattedProgram}.svg`,
+        `${piCode}_${formattedProgram}.png`,
+        `${piCode}.svg`,
+        `${piCode}.png`
+    ];
+
+    // Helper: Check URL using Image object to avoid CORS errors (though 404s might still appear in console)
+    const checkUrlSilence = (url) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = url;
+        });
+    };
+
     try {
-        const response = await fetch(logoDirectoryUrl);
-        if (!response.ok) throw new Error(`Failed to fetch logo directory: ${response.statusText}`);
-
-        const htmlText = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, 'text/html');
-
-        // Locate the folder for the specified ITU code
-        const folderElement = [...doc.querySelectorAll('.folder')].find(folder => folder.textContent.trim().endsWith(`./${ituCode}`));
-
-        if (!folderElement) {
-            return null; // No additional error message needed if the folder does not exist
-        }
-
-        const fileContainer = folderElement.nextElementSibling;
-        if (!fileContainer) {
-            return null; // No additional error message needed if no files are found
-        }
-
-        // Priority order: piCode_currentStation.svg > piCode_currentStation.png > piCode.svg > piCode.png
-        const priorityFiles = [
-            `${piCode}_${formattedProgram}.svg`,
-            `${piCode}_${formattedProgram}.png`,
-            `${piCode}.svg`,
-            `${piCode}.png`
-        ];
-
-        // Search for priority files
         for (const fileName of priorityFiles) {
-            const fileElement = [...fileContainer.querySelectorAll('.file a')].find(file => file.textContent === fileName);
+            const remotePath = `${serverpath}${ituCode}/${fileName}`;
+            
+            // Check existence without causing console error spam
+            const exists = await checkUrlSilence(remotePath);
 
-            if (fileElement) {
-                if (frequency && lastLogoState.frequenz && frequency !== lastLogoState.frequenz) return; // cancel displaying logo if frequency has been changed
-                // Prevent duplicate or missing slashes in the URL
-                const remotePath = `${serverpath}${ituCode}/${fileElement.textContent}`;
+            if (exists) {
+                if (frequency && lastLogoState.frequenz && frequency !== lastLogoState.frequenz) {
+                    return null; // cancel displaying logo if frequency has been changed
+                }
                 console.log(`Logo found in remote directory: ${remotePath}`);
+                
                 // Logo found, update the image
                 logoImage.attr('src', remotePath).attr('alt', 'Station Logo').css('cursor', 'pointer');
-				logoLoadedForCurrentFrequency = true;
-                return; // Return the found logo URL
+                logoLoadedForCurrentFrequency = true;
+                return remotePath; 
             }
         }
-					
+
         // If no logo is found, perform the Online Radio Box search
         if (enableOnlineradioboxSearch && !logoLoadedForCurrentFrequency) {
             OnlineradioboxSearch(Program, ituCode, piCode);
-            logoLoadedForCurrentFrequency = true; // Mark that the logo has been loaded
-			return;
+            logoLoadedForCurrentFrequency = true; 
+            return null;
         }
         
-		if (!defaultLogoLoadedForFrequency[frequency] && !logoLoadedForCurrentFrequency) {
+        if (!defaultLogoLoadedForFrequency[frequency] && !logoLoadedForCurrentFrequency) {
             logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-            defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
+            defaultLogoLoadedForFrequency[frequency] = true;
             console.log("Default logo loaded for frequency:", frequency);
         }
-		
-		return null; // No logo URL found, return null
+        
+        return null; 
 
     } catch (error) {
-        console.error('Error while fetching and parsing logo_directory.html:', error);
+        console.error('Error while checking remote paths:', error);
         logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-        
-        // If no logo is found, perform the Online Radio Box search
-        if (enableOnlineradioboxSearch) {
-            OnlineradioboxSearch(Program, ituCode, piCode);
-            logoLoadedForCurrentFrequency = true; // Mark that the logo has been loaded
-        }
-        return null; // In case of an error, the default logo is also set
+        return null; 
     }
 }
 
