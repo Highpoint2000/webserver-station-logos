@@ -1,29 +1,35 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V3.7)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V4.0)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas/design    /// 
 ///  and AmateurAudioDude for the code customizations!                             ///
 ///                                                                                ///
 ///  New Logo Files (png/svg) and Feedback are welcome!                            ///
 ///  73! Highpoint                                                                 ///
-///                                                   	 last update: 29.11.25     ///
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
-const enableSearchLocal = true; 			// Enable or disable searching local paths (.../web/logos)
+const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = false; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 
-const pluginSetupOnlyNotify = true;		
-const CHECK_FOR_UPDATES = true;; 					
-
 //////////////////////////////////////////////////////////////////////////////////////
-   
+
+const pluginSetupOnlyNotify = true;		
+const CHECK_FOR_UPDATES = true;
+
+// Cache Expiry Timer for exactly resolved remote logos (7 Days)
+const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; 
+
+// Session-level caches (cleared on browser start / page reload)
+let sessionRemoteDirCache = {};
+window.forceImageReload = false; // Flag for Cache-Busting on Long Press
+  
 // Define local version and Github settings
 
-const pluginVersion = '3.7';
+const pluginVersion = '4.0';
 const pluginName = "Station Logo";
 const pluginHomepageUrl = "https://github.com/Highpoint2000/webserver-station-logos/releases";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/Highpoint2000/webserver-station-logos/main/StationLogo/updateStationLogo.js";
@@ -34,7 +40,7 @@ $.getScript(countryListUrl)
   .done(() => {
     console.log('countryList loaded successfully.');
 
-    // Falls countryList nicht global exportiert wurde, manuell übernehmen:
+    // If countryList was not globally exported, manually assign it:
     if (typeof countryList !== 'undefined' && (!window.countryList || window.countryList.length === 0)) {
         window.countryList = countryList;
         console.log(`countryList entries loaded: ${window.countryList.length}`);
@@ -99,7 +105,6 @@ function checkUpdate(setupOnly, pluginName, urlUpdateLink, urlFetchLink) {
         if (newVersion) {
             if (newVersion !== pluginVersionCheck) {
                 let updateConsoleText = "There is a new version of this plugin available";
-                // Any custom code here
                 
                 console.log(`[${pluginName}] ${updateConsoleText}`);
                 setupNotify(pluginVersionCheck, newVersion, pluginName, urlUpdateLink);
@@ -204,7 +209,6 @@ const serverpath = 'https://tef.noobish.eu/logos/';
 const localpath = '/logos/';
 const defaultLocalPath = localpath + 'default-logo.png';
 const defaultServerPath = serverpath + 'default-logo.png';
-const emptyServerPath = serverpath + 'empty-logo.png';
 
 var logoImage;
 if (window.innerWidth < 768) {
@@ -219,8 +223,251 @@ let logoLoadingInProgress = false;
 let defaultLogoLoadedForFrequency = {}; // New flag object to track default logo for each frequency
 let localPiCode = '';
 
-// Store checked paths per frequency
-let checkedPathsPerFrequency = {};
+// Helper to force image reload by bypassing browser cache
+function getBustedUrl(url) {
+    if (window.forceImageReload && url && url !== 'DEFAULT') {
+        const sep = url.includes('?') ? '&' : '?';
+        return `${url}${sep}cb=${Date.now()}`;
+    }
+    return url;
+}
+
+// ==========================================
+// LONG PRESS REFRESH LOGIC
+// ==========================================
+let pressTimer;
+window.isLongPressInProgress = false;
+
+function forceLogoRefresh() {
+    const piCode = logoImage.attr('data-picode') || '?';
+    const ituCode = logoImage.attr('data-itucode') || '?';
+    const Program = logoImage.attr('data-Program') || '';
+    const frequency = logoImage.attr('data-frequency');
+
+    console.log(`[Force Refresh] Long press detected. Clearing caches for ITU: ${ituCode}, PI: ${piCode}`);
+
+    // Enable cache busting for the next image load
+    window.forceImageReload = true;
+    setTimeout(() => { window.forceImageReload = false; }, 3000); // Auto-reset after 3 seconds
+
+    // Visual feedback (blink)
+    logoImage.css('opacity', '0.3');
+    setTimeout(() => logoImage.css('opacity', '1'), 300);
+
+    // 1. Clear session directory cache for this ITU
+    if (ituCode !== '?' && sessionRemoteDirCache[ituCode]) {
+        delete sessionRemoteDirCache[ituCode];
+        console.log(`[Force Refresh] Cleared session directory cache for ITU: ${ituCode}`);
+    }
+
+    // 2. Clear 7-day logo URL cache (inklusive eventuellem "DEFAULT" Cache)
+    if (piCode !== '?') {
+        let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
+        let cleanPiCode = piCode.trim(); 
+        const logoUrlCacheKey = `remote_logo_url_v2_${ituCode}_${cleanPiCode}_${formattedProgram}`;
+        
+        if (localStorage.getItem(logoUrlCacheKey) !== null) {
+            localStorage.removeItem(logoUrlCacheKey);
+            console.log(`[Force Refresh] Cleared 7-day logo cache key.`);
+        }
+    }
+
+    // 3. Reset state flags to force update
+    logoLoadedForCurrentFrequency = false;
+    if(frequency) defaultLogoLoadedForFrequency[frequency] = false;
+    logoLoadingInProgress = false;
+    
+    // Temporarily empty attributes so the update function doesn't skip thinking it's the same station
+    logoImage.attr('data-picode', ''); 
+
+    // 4. Trigger reload
+    updateStationLogo(piCode.trim(), ituCode, Program, frequency);
+}
+
+// Bind long press events to the logos
+$('#station-logo, #station-logo-phone').on('mousedown touchstart', function(e) {
+    if (e.type === 'mousedown' && e.button !== 0) return; // Only allow left-click
+    window.isLongPressInProgress = false;
+    pressTimer = setTimeout(() => {
+        window.isLongPressInProgress = true;
+        forceLogoRefresh();
+    }, 800); // 800 milliseconds for a long press
+}).on('mouseup mouseleave touchend touchmove', function() {
+    clearTimeout(pressTimer);
+});
+// ==========================================
+
+// Centralized function to load the default logo properly
+async function showDefaultLogo(frequency) {
+    let finalDefaultPath = defaultServerPath;
+    
+    if (enableSearchLocal) {
+        try {
+            const response = await fetch(defaultLocalPath, { method: 'HEAD' });
+            if (response.ok) finalDefaultPath = defaultLocalPath;
+        } catch(e) {}
+    }
+    
+    logoImage.attr('src', getBustedUrl(finalDefaultPath)).attr('alt', 'Default Logo').css('cursor', 'pointer'); // Pointer so long press works
+    
+    if (frequency) defaultLogoLoadedForFrequency[frequency] = true;
+    logoLoadedForCurrentFrequency = true;
+    logoLoadingInProgress = false;
+    return finalDefaultPath;
+}
+
+// Function to check local paths sequentially
+async function checkLocalPaths(cleanPiCode, formattedProgram) {
+    const priorityFiles = [];
+    if (formattedProgram !== "") {
+        priorityFiles.push(`${cleanPiCode}_${formattedProgram}.svg`);
+        priorityFiles.push(`${cleanPiCode}_${formattedProgram}.png`);
+    }
+    priorityFiles.push(`${cleanPiCode}.gif`, `${cleanPiCode}.svg`, `${cleanPiCode}.png`);
+
+    for (const fileName of priorityFiles) {
+        try {
+            const response = await fetch(`${localpath}${fileName}`, { method: 'HEAD' });
+            if (response.ok) {
+                return `${localpath}${fileName}`;
+            }
+        } catch(e) { }
+    }
+    return null;
+}
+
+// Function to handle the fallback routine if no local or remote logo is found
+async function handleFallbackSearch(Program, ituCode, piCode, frequency, cacheKey) {
+    const hasValidProgram = Program && Program.trim() !== '';
+
+    // Only run OnlineRadioBox if we have a valid Program name and PiCode
+    if (enableOnlineradioboxSearch && hasValidProgram && piCode !== '?' && !logoLoadedForCurrentFrequency) {
+        OnlineradioboxSearch(Program, ituCode, piCode, cacheKey);
+        logoLoadedForCurrentFrequency = true; 
+        logoLoadingInProgress = false;
+        return null;
+    }
+    
+    // If OnlineRadioBox is disabled or Program is empty, cache the failure as "DEFAULT" and show default
+    if (cacheKey) {
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), url: "DEFAULT" }));
+    }
+    
+    if (!defaultLogoLoadedForFrequency[frequency] && !logoLoadedForCurrentFrequency) {
+        await showDefaultLogo(frequency);
+    } else {
+        logoLoadingInProgress = false;
+    }
+    
+    return null; 
+}
+
+// Function to fetch the directory index of a given ITU code (cached for the session only)
+async function getRemoteDirectoryIndex(ituCode) {
+    if (sessionRemoteDirCache[ituCode]) {
+        return sessionRemoteDirCache[ituCode]; // Use in-memory session cache
+    }
+
+    // Fetch the directory listing from the server
+    try {
+        const response = await fetch(`${serverpath}${ituCode}/`);
+        if (!response.ok) {
+            console.warn(`[Remote Directory] Failed to fetch directory for ${ituCode}`);
+            return [];
+        }
+
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        const links = Array.from(doc.querySelectorAll('a'))
+                           .map(a => a.getAttribute('href'))
+                           .filter(href => href && (href.toLowerCase().endsWith('.svg') || href.toLowerCase().endsWith('.png')));
+        
+        const decodedLinks = links.map(link => {
+            let cleanLink = link.split('?')[0]; 
+            cleanLink = cleanLink.split('/').pop(); 
+            return decodeURIComponent(cleanLink).trim(); 
+        });
+
+        sessionRemoteDirCache[ituCode] = decodedLinks; // Store in session memory
+        console.log(`[Remote Directory] Loaded ${decodedLinks.length} files for ITU: ${ituCode} for this browser session.`);
+        return decodedLinks;
+
+    } catch (err) {
+        console.error(`[Remote Directory] Error fetching directory index for ${ituCode}:`, err);
+        return [];
+    }
+}
+
+// Function to check remote paths (Maintains 7-Day cache for actual resolved URLs AND defaults)
+async function checkRemotePaths(Program, ituCode, piCode, frequency) {
+    let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
+    let cleanPiCode = piCode.trim(); 
+    
+    // Check 7-day localStorage cache for this specific station's resolved URL
+    const logoUrlCacheKey = `remote_logo_url_v2_${ituCode}_${cleanPiCode}_${formattedProgram}`;
+    const cachedLogoDataStr = localStorage.getItem(logoUrlCacheKey);
+    const now = Date.now();
+
+    if (cachedLogoDataStr) {
+        try {
+            const cachedData = JSON.parse(cachedLogoDataStr);
+            if (now - cachedData.timestamp < CACHE_EXPIRY_MS) {
+                if (frequency && lastLogoState.frequenz && frequency !== lastLogoState.frequenz) return null;
+                
+                if (cachedData.url === "DEFAULT") {
+                    console.log(`[Logo Cache] Known missing logo for this station (cached state). Loading default logo.`);
+                    return await showDefaultLogo(frequency);
+                } else if (cachedData.url) {
+                    console.log(`[Logo Cache] Using 7-day cached URL: ${cachedData.url}`);
+                    logoImage.attr('src', getBustedUrl(cachedData.url)).attr('alt', 'Station Logo').css('cursor', 'pointer');
+                    logoLoadedForCurrentFrequency = true;
+                    return cachedData.url;
+                }
+            } else {
+                localStorage.removeItem(logoUrlCacheKey);
+            }
+        } catch (e) {
+            localStorage.removeItem(logoUrlCacheKey);
+        }
+    }
+
+    const priorityFiles = [
+        `${cleanPiCode}_${formattedProgram}.svg`,
+        `${cleanPiCode}_${formattedProgram}.png`,
+        `${cleanPiCode}.svg`,
+        `${cleanPiCode}.png`
+    ];
+
+    try {
+        const dirFiles = await getRemoteDirectoryIndex(ituCode);
+
+        for (const fileName of priorityFiles) {
+            const foundFile = dirFiles.find(f => f.toLowerCase() === fileName.toLowerCase());
+            
+            if (foundFile) {
+                if (frequency && lastLogoState.frequenz && frequency !== lastLogoState.frequenz) return null;
+                
+                const remotePath = `${serverpath}${ituCode}/${foundFile}`; 
+                console.log(`[Directory Search] Found new logo: ${remotePath}`);
+                
+                localStorage.setItem(logoUrlCacheKey, JSON.stringify({ timestamp: now, url: remotePath }));
+
+                logoImage.attr('src', getBustedUrl(remotePath)).attr('alt', 'Station Logo').css('cursor', 'pointer');
+                logoLoadedForCurrentFrequency = true;
+                return remotePath; 
+            }
+        }
+
+        console.log(`Logo not found in remote directory cache for ${cleanPiCode} / ${formattedProgram}`);
+        return await handleFallbackSearch(Program, ituCode, cleanPiCode, frequency, logoUrlCacheKey);
+
+    } catch (error) {
+        console.error('Error while checking remote paths:', error);
+        return await showDefaultLogo(frequency);
+    }
+}
 
 // Function to update the station logo based on various parameters
 function updateStationLogo(piCode, ituCode, Program, frequency) {
@@ -232,16 +479,12 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
     let oldItuCode = logoImage.attr('data-itucode');
     let oldProgram = logoImage.attr('data-Program');
 
-    if (piCode === '' || piCode.includes('?')) {
-        piCode = '?';
-    }
-    if (ituCode === '' || ituCode.includes('?')) {
-        ituCode = '?';
-    }
+    if (piCode === '' || piCode === null || piCode.includes('?')) piCode = '?';
+    if (ituCode === '' || ituCode === null || ituCode.includes('?')) ituCode = '?';
+    if (!Program) Program = '';
 
     // If the PI code has changed, trigger a delay to check again
     if (piCode !== oldPiCode && updateLogoOnPiCodeChange) {
-        // Wait for 1.5 seconds before checking the condition again
         setTimeout(() => {
             if (piCode !== oldPiCode && updateLogoOnPiCodeChange) {
                 logoLoadedForCurrentFrequency = false;
@@ -253,9 +496,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
     // Check if the frequency has changed
     if (frequency !== currentFrequency) {
         currentFrequency = frequency;
-        logoLoadedForCurrentFrequency = false; // Reset variable on frequency change
-        // Clear checked paths for the new frequency
-        checkedPathsPerFrequency[frequency] = new Set();
+        logoLoadedForCurrentFrequency = false; 
         defaultLogoLoadedForFrequency[frequency] = false;
     }
 
@@ -268,246 +509,53 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
         logoImage.attr('data-frequency', frequency);
         logoImage.attr('title', `Plugin Version: ${pluginVersion}`);
 
-        let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
-        let formattedpiCode = piCode.toUpperCase();
-        if (formattedProgram !== "") {
-            console.log(formattedpiCode + '_' + formattedProgram + '.svg or ' + formattedpiCode + '_' + formattedProgram + '.png');
-        }
+        // Handle async loading sequence
+        (async () => {
+            let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
+            let cleanPiCode = piCode.toUpperCase().trim();
 
-        // Define paths to check for the logo
-        const localPaths = enableSearchLocal ? [
-            `${localpath}${piCode}_${formattedProgram}.svg` !== `${localpath}${piCode}_.svg` ? `${localpath}${piCode}_${formattedProgram}.svg` : null,
-            `${localpath}${piCode}_${formattedProgram}.png` !== `${localpath}${piCode}_.png` ? `${localpath}${piCode}_${formattedProgram}.png` : null,
-            `${localpath}${piCode}.gif`,
-            `${localpath}${piCode}.svg`,
-            `${localpath}${piCode}.png`
-        ].filter(path => path !== null) : [];
-
-        // Ensure checked paths are initialized for the current frequency
-        if (!checkedPathsPerFrequency[frequency]) {
-            checkedPathsPerFrequency[frequency] = new Set();
-        }
-
-        // Filter out paths that have already been checked for the current frequency
-        const pathsToCheck = localPaths.filter(path => !checkedPathsPerFrequency[frequency].has(path));
-
-        // Function to check if the logo exists at specified paths
-        function checkPaths(paths, onSuccess, onFailure, triggerLogoSearch) {
-            function checkNext(index) {
-                if (index >= paths.length) {
-                    if (onFailure) onFailure();
-                    logoLoadingInProgress = false;
-                    return;
+            if (cleanPiCode !== '?') {
+                if (formattedProgram !== "") {
+                    console.log(cleanPiCode + '_' + formattedProgram + '.svg or ' + cleanPiCode + '_' + formattedProgram + '.png');
                 }
 
-                const currentPath = paths[index];
+                let localFoundPath = null;
 
-                $.ajax({
-                    type: "HEAD",
-                    url: currentPath,
-                    success: function() {
-                        logoImage.attr('src', currentPath).attr('alt', `Logo for station ${piCode}`).css('display', 'block');
-                        console.log("Logo found: " + currentPath);
-                        if (onSuccess) onSuccess();
-                        if (triggerLogoSearch && Program !== oldProgram) {
-                            LogoSearch(piCode, ituCode, Program);
-                        }
-                        logoLoadedForCurrentFrequency = true; // Mark that the logo has been loaded
-                        logoLoadingInProgress = false;
-                    },
-                    error: function() {
-                        checkedPathsPerFrequency[frequency].add(currentPath); // Mark path as checked for this frequency
-                        checkNext(index + 1);
-                    }
-                });
-            }
-            checkNext(0);
-        }
-
-        if (piCode !== '?') {
-            checkPaths(pathsToCheck, null, function() {
-				
-				if (ituCode.includes("USA")) {							
-					ituCode = 'USA';
-				}
-				
-                // If no local path has the logo, proceed with remote checks
-                if (piCode !== '?' && ituCode !== '?') {
-                    // Modified checkRemotePaths call
-                    checkRemotePaths(Program, ituCode, piCode, frequency).then(remoteLogo => {
-                        if (remoteLogo) {
-                            if (Program !== oldProgram) {
-                                LogoSearch(piCode, ituCode, Program);
-                            }
-                            logoLoadingInProgress = false;
-                            return; // Abort further checks
-                        }
-    
-                        // Fallback logic if remote path check returns null
-                        fallbackToDefaultOrOnlineSearch();
-                    });
-                } else {
-                    fallbackToDefaultOrOnlineSearch();
+                // 1. Search Local First
+                if (enableSearchLocal) {
+                    localFoundPath = await checkLocalPaths(cleanPiCode, formattedProgram);
                 }
 
-                function fallbackToDefaultOrOnlineSearch() {
-                     if (enableOnlineradioboxSearch && !logoLoadedForCurrentFrequency) {
-                        OnlineradioboxSearch(Program, ituCode, piCode);
-                        logoLoadedForCurrentFrequency = true;
-                        logoLoadingInProgress = false;
-                        return;
-                    }
+                if (localFoundPath) {
+                    logoImage.attr('src', getBustedUrl(localFoundPath)).attr('alt', `Logo for station ${cleanPiCode}`).css('display', 'block');
+                    console.log(`[Local Search] Found local logo: ${localFoundPath}`);
                     
-                    if (!defaultLogoLoadedForFrequency[frequency]) {
-                        if (enableSearchLocal) {
-                            // Check if defaultLocalPath exists
-                            fetch(defaultLocalPath, { method: 'HEAD' })
-                                .then(response => {
-                                    if (response.ok) {
-                                        // Local file exists
-                                        logoImage.attr('src', defaultLocalPath)
-                                            .attr('alt', 'Default Local Logo')
-                                            .css('cursor', 'auto');
-                                    } else {
-                                        // Local file does not exist, load from server
-                                        logoImage.attr('src', defaultServerPath)
-                                            .attr('alt', 'Default Server Logo')
-                                            .css('cursor', 'auto');
-                                    }
-                                    defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
-                                })
-                                .catch(error => {
-                                    // In case of an error, also load the server logo
-                                    console.error("Error checking local path:", error);
-                                    logoImage.attr('src', defaultServerPath)
-                                        .attr('alt', 'Default Server Logo')
-                                        .css('cursor', 'auto');
-                                    defaultLogoLoadedForFrequency[frequency] = true;
-                                })
-                                .finally(() => {
-                                    logoLoadingInProgress = false;
-                                });
-                        } else {
-                            // Skip local check and use server logo
-                            logoImage.attr('src', defaultServerPath)
-                                .attr('alt', 'Default Server Logo')
-                                .css('cursor', 'auto');
-                            defaultLogoLoadedForFrequency[frequency] = true;
-                            logoLoadingInProgress = false;
+                    if (Program !== oldProgram) {
+                        LogoSearch(cleanPiCode, ituCode, Program);
+                    }
+                    logoLoadedForCurrentFrequency = true;
+                    logoLoadingInProgress = false;
+                } else {
+                    // 2. Search Remote
+                    if (ituCode.includes("USA")) ituCode = 'USA';
+                    
+                    if (ituCode !== '?') {
+                        const remoteLogo = await checkRemotePaths(Program, ituCode, cleanPiCode, frequency);
+                        if (remoteLogo && remoteLogo !== "DEFAULT") {
+                            if (Program !== oldProgram) {
+                                LogoSearch(cleanPiCode, ituCode, Program);
+                            }
                             logoLoadingInProgress = false;
                         }
                     } else {
-                        logoLoadingInProgress = false;
+                        await handleFallbackSearch(Program, ituCode, cleanPiCode, frequency, null);
                     }
                 }
-            }, false);
-        } else {
-             // ... logic for piCode === '?' (same as before) ...
-             if (!defaultLogoLoadedForFrequency[frequency]) {
-                if (enableSearchLocal) {
-                    // Check if defaultLocalPath exists
-                    fetch(defaultLocalPath, { method: 'HEAD' })
-                        .then(response => {
-                            if (response.ok) {
-                                // Local file exists
-                                logoImage.attr('src', defaultLocalPath)
-                                    .attr('alt', 'Default Local Logo')
-                                    .css('cursor', 'auto');
-                            } else {
-                                // Local file does not exist, load from server
-                                logoImage.attr('src', defaultServerPath)
-                                    .attr('alt', 'Default Server Logo')
-                                    .css('cursor', 'auto');
-                            }
-                            defaultLogoLoadedForFrequency[frequency] = true; // Mark default logo as loaded for this frequency
-                        })
-                        .catch(error => {
-                            // In case of an error, also load the server logo
-                            console.error("Error checking local path:", error);
-                            logoImage.attr('src', defaultServerPath)
-                                .attr('alt', 'Default Server Logo')
-                                .css('cursor', 'auto');
-                            defaultLogoLoadedForFrequency[frequency] = true;
-                        })
-                        .finally(() => {
-                            logoLoadingInProgress = false;
-                        });
-                } else {
-                    // Skip local check and use server logo
-                    logoImage.attr('src', defaultServerPath)
-                        .attr('alt', 'Default Server Logo')
-                        .css('cursor', 'auto');
-                    defaultLogoLoadedForFrequency[frequency] = true;
-                    logoLoadingInProgress = false;
-                }
             } else {
-                logoLoadingInProgress = false;
+                // Instantly load default logo if piCode is "?"
+                await showDefaultLogo(frequency);
             }
-        }
-    }
-}
-
-// Function to check remote paths without directory listing
-async function checkRemotePaths(Program, ituCode, piCode, frequency) {
-    let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
-
-    // Priority order: piCode_currentStation.svg > piCode_currentStation.png > piCode.svg > piCode.png
-    const priorityFiles = [
-        `${piCode}_${formattedProgram}.svg`,
-        `${piCode}_${formattedProgram}.png`,
-        `${piCode}.svg`,
-        `${piCode}.png`
-    ];
-
-    // Helper: Check URL using Image object to avoid CORS errors (though 404s might still appear in console)
-    const checkUrlSilence = (url) => {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve(true);
-            img.onerror = () => resolve(false);
-            img.src = url;
-        });
-    };
-
-    try {
-        for (const fileName of priorityFiles) {
-            const remotePath = `${serverpath}${ituCode}/${fileName}`;
-            
-            // Check existence without causing console error spam
-            const exists = await checkUrlSilence(remotePath);
-
-            if (exists) {
-                if (frequency && lastLogoState.frequenz && frequency !== lastLogoState.frequenz) {
-                    return null; // cancel displaying logo if frequency has been changed
-                }
-                console.log(`Logo found in remote directory: ${remotePath}`);
-                
-                // Logo found, update the image
-                logoImage.attr('src', remotePath).attr('alt', 'Station Logo').css('cursor', 'pointer');
-                logoLoadedForCurrentFrequency = true;
-                return remotePath; 
-            }
-        }
-
-        // If no logo is found, perform the Online Radio Box search
-        if (enableOnlineradioboxSearch && !logoLoadedForCurrentFrequency) {
-            OnlineradioboxSearch(Program, ituCode, piCode);
-            logoLoadedForCurrentFrequency = true; 
-            return null;
-        }
-        
-        if (!defaultLogoLoadedForFrequency[frequency] && !logoLoadedForCurrentFrequency) {
-            logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-            defaultLogoLoadedForFrequency[frequency] = true;
-            console.log("Default logo loaded for frequency:", frequency);
-        }
-        
-        return null; 
-
-    } catch (error) {
-        console.error('Error while checking remote paths:', error);
-        logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-        return null; 
+        })();
     }
 }
 
@@ -596,50 +644,44 @@ function handleStationLogoUpdate(event) {
 }
 
 
-
-
 // Function to perform a Google search for station logos and handle results
 function LogoSearch(piCode, ituCode, Program) {
-    // Store parameters in local variables
     const currentPiCode = piCode;
     const currentStation = Program;
     const currentituCode = ituCode;
     const tooltipContainer = $('.panel-30');
 
-    // If both the ITU code and station name are provided, proceed with the commands
-    if (currentituCode !== '' && currentStation !== '') {
-        // Retrieve the country name based on the ITU code
+    if (currentituCode !== '' && currentStation !== '' && currentPiCode !== '?') {
         const countryName = getCountryNameByItuCode(ituCode);
-        // Combine the station name with the country name
         const ituCodeCurrentStation = `${currentStation} ${countryName}`;
-        // Construct the search query for Google with specified file types and additional parameters
         const searchQuery = `${ituCodeCurrentStation} filetype:png OR filetype:svg Radio&tbs=sbd:1&udm=2`;
         console.log("Search query:", searchQuery);
 
-        // Update the tooltip container style and assign a click event handler
         tooltipContainer
             .css('background-color', 'var(--color-2-transparent)')
             .off('click')
-            .on('click', () => {
+            .on('click', (e) => {
+                // Block link opening if this was a long press
+                if (window.isLongPressInProgress) {
+                    window.isLongPressInProgress = false; 
+                    return; 
+                }
+                
                 console.log('Opening URL:', 'https://www.google.com/search?q=' + searchQuery);
-                // Open the search URL in a new window or tab
                 window.open('https://www.google.com/search?q=' + searchQuery, '_blank');
             });
 
-        // Change the cursor to pointer to indicate the element is clickable
         logoImage.css('cursor', 'pointer');
-        logoLoadedForCurrentFrequency = true; // Mark that the logo has been loaded for the current frequency
+        logoLoadedForCurrentFrequency = true; 
     } else {
-        // Set the cursor to auto if no valid search query can be formed
-        logoImage.css('cursor', 'auto');
+        // If incomplete data, still allow long press cursor
+        logoImage.css('cursor', 'pointer');
     }
 }
 
 function getCountryNameByItuCode(ituCode) {
-    // defensive check—if countryList isn't an array, bail out
-    if (!Array.isArray(window.countryList)) {
-        return "Country not found";
-    }
+    if (!Array.isArray(window.countryList)) return "Country not found";
+    
     const country = window.countryList.find(
       item => item.itu_code === ituCode.toUpperCase()
     );
@@ -652,22 +694,16 @@ async function compareAndSelectImage(currentStation, imgSrcElements) {
     let minDistance = Infinity;
     let selectedImgSrc = null;
 
-    // Loop through all found image titles
     imgSrcElements.forEach(imgSrcElement => {
-        // Extract the title of the image
         const title = imgSrcElement.getAttribute('title');
-
-        // Calculate the Levenshtein distance between the current program and the image title
         const distance = Math.abs(currentStation.toLowerCase().localeCompare(title.toLowerCase()));
 
-        // Update the selected image URL if the distance is smaller than the current minimum distance
         if (distance < minDistance) {
             minDistance = distance;
             selectedImgSrc = imgSrcElement.getAttribute('src');
         }
     });
 
-    // Add "https://" to the beginning if not present
     if (selectedImgSrc && !selectedImgSrc.startsWith('https://')) {
         selectedImgSrc = 'https:' + selectedImgSrc;
     }
@@ -675,16 +711,8 @@ async function compareAndSelectImage(currentStation, imgSrcElements) {
     return selectedImgSrc;
 }
 
-// Function to fetch a URL with a timeout
-function fetchWithTimeout(url, timeout = 5000) {
-    const controller = new AbortController();
-    const signal = controller.signal;
-    setTimeout(() => controller.abort(), timeout);
-    return fetch(url, { signal });
-}
-
 // Function to parse a page, search for logos, and handle results
-async function parsePage(url, Program_original, ituCode, piCode) {
+async function parsePage(url, Program_original, ituCode, piCode, cacheKey) {
     try {
         const corsAnywhereUrl = 'https://cors-proxy.de:13128/';
         const fetchPromise = fetch(`${corsAnywhereUrl}${url}`);
@@ -697,7 +725,6 @@ async function parsePage(url, Program_original, ituCode, piCode) {
         if (!response.ok) throw new Error('Network response was not ok.');
 
         const html = await response.text();
-
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const imgSrcElements = doc.querySelectorAll('img[class="station__title__logo"]');
@@ -705,34 +732,39 @@ async function parsePage(url, Program_original, ituCode, piCode) {
         const selectedImgSrc = await compareAndSelectImage(Program_original, imgSrcElements);
 
         if (selectedImgSrc) {
-            console.log('Selected image source:', selectedImgSrc);
-            logoImage.attr('src', selectedImgSrc).attr('alt', `Logo for station ${piCode}`).css('cursor', 'pointer');
-            LogoSearch(piCode, ituCode, Program_original);  // Calling LogoSearch with the logo found
+            console.log('Selected image source from OnlineRadioBox:', selectedImgSrc);
+            
+            // Cache successful ORB finding
+            if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), url: selectedImgSrc }));
+            
+            logoImage.attr('src', getBustedUrl(selectedImgSrc)).attr('alt', `Logo for station ${piCode}`).css('cursor', 'pointer');
+            LogoSearch(piCode, ituCode, Program_original);  
         } else {
-            throw new Error("No logo found");
+            throw new Error("No logo found on OnlineRadioBox");
         }
     } catch (error) {
-        console.error('Error fetching and processing the page:', error);
+        console.error('Error fetching ORB:', error.message);
+        
+        // Cache absolute failure as "DEFAULT"
+        if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), url: "DEFAULT" }));
+        
+        await showDefaultLogo(currentFrequency);
         if (Program_original && piCode && ituCode) {
-            logoImage.attr('src', defaultServerPath).attr('alt', 'Default Logo').css('cursor', 'auto');
-            LogoSearch(piCode, ituCode, Program_original);  // Calling LogoSearch even if no logo is found
-        } else {
-            console.log("Program, PI code, or ITU code missing, no default logo will be loaded.");
+            LogoSearch(piCode, ituCode, Program_original);  
         }
     }
 }
 
-// Definition of the OnlineradioboxSearch function in a separate module
-async function OnlineradioboxSearch(Program, ituCode, piCode) {
+// Definition of the OnlineradioboxSearch function
+async function OnlineradioboxSearch(Program, ituCode, piCode, cacheKey) {
     const currentStation = Program;
-
     const selectedCountry = countryList.find(item => item.itu_code === ituCode);
     const selectedCountryCode = selectedCountry ? selectedCountry.country_code : null;
 
     const searchUrl = `https://onlineradiobox.com/search?c=${selectedCountryCode}&cs=${selectedCountryCode}&q=${currentStation.replace(/\s/g, '%20')}`;
     console.log('Search URL:', searchUrl);
 
-    await parsePage(searchUrl, Program, ituCode, piCode);  // Forwarding of additional parameters
+    await parsePage(searchUrl, Program, ituCode, piCode, cacheKey);  
 }
 
     // Function to check if the user is logged in as an administrator

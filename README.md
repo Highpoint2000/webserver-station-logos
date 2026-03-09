@@ -5,9 +5,11 @@ This script provides a logo for identified radio stations.
 ![image](https://github.com/user-attachments/assets/db9c267c-bf2b-45bd-9c99-d030a80e60f8)
 
 
-## v3.7:
+## v4.0:
 
-- The use of the directory on the server has been removed; the logos are now loaded directly again.
+- New 7-day caching mechanism for logos has been added, resulting in faster logo loading and reduced server load
+- Directory cache on the logo server is now used to prevent individual queries, reducing error output and server load
+- Pressing and holding the logo clears the local cache and reloads the current logo from the logo server or the local folder (useful after a logo update on the logo server!)
 
 ## Installation notes:
 
@@ -25,13 +27,13 @@ The following variables can be changed in the header of the script:
     enableSearchLocal = false; 		    // Enable or disable searching local paths (.../web/logos)
     enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
     updateLogoOnPiCodeChange = true; 	// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
-    updateInfo = true; 			        // Enable or disable daily versions check for admin login
 
 
 ## Important notes: 
 
-In order for logos to be displayed, your own location in the web server must also be correctly entered and activated! Otherwise, the system cannot receive an ITU code of the sender location to display the logo. The correct station logo should then be loaded during RDS recognition, provided a specific logo has already been created on our [server](https://tef.noobish.eu/logos/logo_preview.html) or it is located in the local /web/logos folder. LOGOS with the same PI code can be distinguished by adding the program name from the TX field. To do this, rename the file to PICODE_PROGRAMNAME.png/.svg, all in capital letters and without spaces or special characters e.g. "9210" & "DR P1/DR P2" ---> 9210_DRP1DRP2.png . Missing logos will be taken over by onlineradiobox.com (from version 3.1).
-For missing or incorrect logos, please use the integrated Google search function. This is activated automatically (the logo box is highlighted) if a country code and a program name can also be retrieved from the database for a PI code. In most cases, you can find the right logo this way. Many logos are in PNG or SVG format with a transparent background. These fit in very well with the look of the web server. For the PNG format, a small version is often sufficient, as we currently process a maximum of 140 pixels wide and 60 pixels high. Basically, the script inserts the logos appropriately into the existing window. If you create logos for different countries, please place them in separate folders that you are welcome to use with the ITU names. Then just send me the files or a download link via [email](mailto:highpoint2000@googlemail.com) or via our [Discord Community](https://discord.gg/fmdx). I will upload them to our [server](https://tef.noobish.eu/logos/logo_preview.html) as soon as possible.
+- In order for logos to be displayed, your own location in the web server must also be correctly entered and activated! Otherwise, the system cannot receive an ITU code of the sender location to display the logo. The correct station logo should then be loaded during RDS recognition, provided a specific logo has already been created on our [server](https://tef.noobish.eu/logos/logo_preview.html) or it is located in the local /web/logos folder. LOGOS with the same PI code can be distinguished by adding the program name from the TX field. To do this, rename the file to PICODE_PROGRAMNAME.png/.svg, all in capital letters and without spaces or special characters e.g. "9210" & "DR P1/DR P2" ---> 9210_DRP1DRP2.png . Missing logos will be taken over by onlineradiobox.com (from version 3.1).
+- For missing or incorrect logos, please use the integrated Google search function. This is activated automatically (the logo box is highlighted) if a country code and a program name can also be retrieved from the database for a PI code. In most cases, you can find the right logo this way. Many logos are in PNG or SVG format with a transparent background. These fit in very well with the look of the web server. For the PNG format, a small version is often sufficient, as we currently process a maximum of 140 pixels wide and 60 pixels high. Basically, the script inserts the logos appropriately into the existing window. If you create logos for different countries, please place them in separate folders that you are welcome to use with the ITU names. Then just send me the files or a download link via [email](mailto:highpoint2000@googlemail.com) or via our [Discord Community](https://discord.gg/fmdx). I will upload them to our [server](https://tef.noobish.eu/logos/logo_preview.html) as soon as possible.
+- Pressing and holding the logo clears the local cache and reloads the current logo from the logo server or the local folder.
 
 ## Disclaimer: 
 If a logo used in the plugin violates copyright, please let [me](mailto:highpoint2000@googlemail.com) know. I will remove it immediately.
@@ -44,6 +46,10 @@ If you have any questions, would like to report problems, or have suggestions fo
 
 <details>
 <summary>History</summary>
+
+### v3.7:
+
+- The use of the directory on the server has been removed; the logos are now loaded directly again.
 
 ### v3.6b:
 
