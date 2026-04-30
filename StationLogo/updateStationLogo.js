@@ -1,7 +1,7 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V4.0)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V4.0a)                        ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas/design    /// 
 ///  and AmateurAudioDude for the code customizations!                             ///
@@ -11,7 +11,7 @@
 ///                                                                                ///
 //////////////////////////////////////////////////////////////////////////////////////
 
-const enableSearchLocal = false; 			// Enable or disable searching local paths (.../web/logos)
+const enableSearchLocal = true; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = false; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
 
@@ -29,7 +29,7 @@ window.forceImageReload = false; // Flag for Cache-Busting on Long Press
   
 // Define local version and Github settings
 
-const pluginVersion = '4.0';
+const pluginVersion = '4.0a';
 const pluginName = "Station Logo";
 const pluginHomepageUrl = "https://github.com/Highpoint2000/webserver-station-logos/releases";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/Highpoint2000/webserver-station-logos/main/StationLogo/updateStationLogo.js";
@@ -179,7 +179,7 @@ var MobileHTML = `
     <div id="flags-container-phone" class="panel-33 user-select-none">
         <h2 class="show-phone">    
             <div id="logo-container-phone" style="width: auto; height: 70px; display: flex; justify-content: center; align-items: center; margin: auto;">                 
-                <img id="station-logo-phone" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-phone" style="max-width: 160px; padding: 1px 2px; max-height: 100%; margin-top: 0px; display: block;">    
+                <img id="station-logo-phone" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-phone" style="max-width: 160px; padding: 1px 2px; max-height: 100%; margin-top: 30px; display: block;">    
             </div>
             <br>
             <div class="data-pty text-color-default"></div>
@@ -503,62 +503,71 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
     // Only load the logo if the frequency has changed or if the PI code, ITU code, or Program have changed
     if (!logoLoadedForCurrentFrequency || (updateLogoOnPiCodeChange && (piCode !== oldPiCode || ituCode !== oldItuCode || Program !== oldProgram))) {
         logoLoadingInProgress = true;
+
+        // ── NEU: Deadlock-Schutz – Flag nach max. 8s automatisch freigeben ──
+        const loadingGuard = setTimeout(() => {
+            if (logoLoadingInProgress) {
+                console.warn('[Station Logo] logoLoadingInProgress Timeout – resetting flag');
+                logoLoadingInProgress = false;
+            }
+        }, 8000);
+
         logoImage.attr('data-picode', piCode);
         logoImage.attr('data-itucode', ituCode);
         logoImage.attr('data-Program', Program);
         logoImage.attr('data-frequency', frequency);
         logoImage.attr('title', `Plugin Version: ${pluginVersion}`);
 
-        // Handle async loading sequence
         (async () => {
-            let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
-            let cleanPiCode = piCode.toUpperCase().trim();
+            try {
+                let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
+                let cleanPiCode = piCode.toUpperCase().trim();
 
-            if (cleanPiCode !== '?') {
-                if (formattedProgram !== "") {
-                    console.log(cleanPiCode + '_' + formattedProgram + '.svg or ' + cleanPiCode + '_' + formattedProgram + '.png');
-                }
-
-                let localFoundPath = null;
-
-                // 1. Search Local First
-                if (enableSearchLocal) {
-                    localFoundPath = await checkLocalPaths(cleanPiCode, formattedProgram);
-                }
-
-                if (localFoundPath) {
-                    logoImage.attr('src', getBustedUrl(localFoundPath)).attr('alt', `Logo for station ${cleanPiCode}`).css('display', 'block');
-                    console.log(`[Local Search] Found local logo: ${localFoundPath}`);
-                    
-                    if (Program !== oldProgram) {
-                        LogoSearch(cleanPiCode, ituCode, Program);
+                if (cleanPiCode !== '?') {
+                    if (formattedProgram !== "") {
+                        console.log(cleanPiCode + '_' + formattedProgram + '.svg or ' + cleanPiCode + '_' + formattedProgram + '.png');
                     }
-                    logoLoadedForCurrentFrequency = true;
-                    logoLoadingInProgress = false;
-                } else {
-                    // 2. Search Remote
-                    if (ituCode.includes("USA")) ituCode = 'USA';
-                    
-                    if (ituCode !== '?') {
-                        const remoteLogo = await checkRemotePaths(Program, ituCode, cleanPiCode, frequency);
-                        if (remoteLogo && remoteLogo !== "DEFAULT") {
-                            if (Program !== oldProgram) {
-                                LogoSearch(cleanPiCode, ituCode, Program);
-                            }
-                            logoLoadingInProgress = false;
-                        }
+
+                    let localFoundPath = null;
+
+                    if (enableSearchLocal) {
+                        localFoundPath = await checkLocalPaths(cleanPiCode, formattedProgram);
+                    }
+
+                    if (localFoundPath) {
+                        logoImage.attr('src', getBustedUrl(localFoundPath)).attr('alt', `Logo for station ${cleanPiCode}`).css('display', 'block');
+                        console.log(`[Local Search] Found local logo: ${localFoundPath}`);
+                        if (Program !== oldProgram) LogoSearch(cleanPiCode, ituCode, Program);
+                        logoLoadedForCurrentFrequency = true;
+                        logoLoadingInProgress = false;
                     } else {
-                        await handleFallbackSearch(Program, ituCode, cleanPiCode, frequency, null);
+                        if (ituCode.includes("USA")) ituCode = 'USA';
+                        if (ituCode !== '?') {
+                            const remoteLogo = await checkRemotePaths(Program, ituCode, cleanPiCode, frequency);
+                            if (remoteLogo && remoteLogo !== "DEFAULT") {
+                                if (Program !== oldProgram) LogoSearch(cleanPiCode, ituCode, Program);
+                                logoLoadingInProgress = false; // ← war schon vorhanden
+                            }
+                            // ── NEU: auch bei null/DEFAULT Flag freigeben ──
+                            else {
+                                logoLoadingInProgress = false;
+                            }
+                        } else {
+                            await handleFallbackSearch(Program, ituCode, cleanPiCode, frequency, null);
+                        }
                     }
+                } else {
+                    await showDefaultLogo(frequency);
                 }
-            } else {
-                // Instantly load default logo if piCode is "?"
-                await showDefaultLogo(frequency);
+            } finally {
+                // ── NEU: Guard immer canceln wenn async-Block fertig ──
+                clearTimeout(loadingGuard);
+                // Sicherstellen dass Flag am Ende immer freigegeben wird
+                if (logoLoadingInProgress) logoLoadingInProgress = false;
             }
         })();
     }
 }
-
 
 let lastLogoState = {
     piCode: null,
@@ -612,6 +621,9 @@ function onSocketError() {
     setTimeout(connectWebSocket_StationLogo, 10000);
 }
 
+// ── Debounce-Schutz gegen transiente pi='?' vom RDS AI Decoder ──
+let _pendingDefaultTimer = null;
+
 function handleStationLogoUpdate(event) {
     const now = Date.now();
     if (now - lastProcessedTime_Station < TIMEOUT_DURATION_STATION) return;
@@ -625,18 +637,44 @@ function handleStationLogoUpdate(event) {
         const frequenz = data.freq;
         const psCode   = data.ps;
 
-        if (
-            executeStationLogo && (
-                piCode !== lastLogoState.piCode ||
-                ituCode !== lastLogoState.ituCode ||
-                Program !== lastLogoState.Program ||
-                frequenz !== lastLogoState.frequenz ||
-                psCode !== lastLogoState.psCode
-            )
-        ) {
-            updateStationLogo(piCode, ituCode, Program, frequenz);
-            lastLogoState = { piCode, ituCode, Program, frequenz, psCode };
+        // ── NEU: Transiente Zwischenzustände vom RDS AI Decoder abfangen ──
+        // pi='?' bei unveränderter Frequenz = kurzer Übergangszustand, kein echter Kanalwechsel
+        const freqChanged  = frequenz !== lastLogoState.frequenz;
+        const piIsInvalid  = !piCode || piCode === '?' || piCode.includes('?');
+        const psIsEmpty    = !psCode || psCode.trim() === '';
+
+        if (piIsInvalid && !freqChanged && psIsEmpty) {
+            // Könnte ein transientes '?' vom RDS AI Decoder sein.
+            // 600ms warten – kommt danach ein echter PI, wird dieser verwendet.
+            if (_pendingDefaultTimer) clearTimeout(_pendingDefaultTimer);
+            _pendingDefaultTimer = setTimeout(() => {
+                _pendingDefaultTimer = null;
+                // Nur Default laden wenn immer noch kein gültiger PI da ist
+                if (lastLogoState.piCode && lastLogoState.piCode !== '?') return;
+                updateStationLogo(piCode, ituCode, Program, frequenz);
+                lastLogoState = { piCode, ituCode, Program, frequenz, psCode };
+            }, 600);
+            return;
         }
+
+        // Echten PI sofort verarbeiten – pending Default abbrechen
+        if (!piIsInvalid && _pendingDefaultTimer) {
+            clearTimeout(_pendingDefaultTimer);
+            _pendingDefaultTimer = null;
+        }
+
+    if (
+        executeStationLogo && (
+            piCode !== lastLogoState.piCode ||
+            ituCode !== lastLogoState.ituCode ||
+            Program !== lastLogoState.Program ||
+            frequenz !== lastLogoState.frequenz
+            // ── psCode ENTFERNT – PS-Änderungen sollen kein Logo-Reload auslösen ──
+        )
+    ) {
+        updateStationLogo(piCode, ituCode, Program, frequenz);
+        lastLogoState = { piCode, ituCode, Program, frequenz, psCode };
+    }
 
     } catch (err) {
         console.error('Station Logo: Failed to parse WebSocket message', err);
@@ -658,8 +696,22 @@ function LogoSearch(piCode, ituCode, Program) {
         console.log("Search query:", searchQuery);
 
         tooltipContainer
-            .css('background-color', 'var(--color-2-transparent)')
-            .off('click')
+            // Setze die Standardfarbe und (optional) eine weiche Animation
+            .css({
+                'background-color': 'var(--color-1-transparent)',
+                'transition': 'background-color 0.2s ease-in-out' 
+            })
+            // Vorherige Events entfernen, um Mehrfachausführungen zu verhindern
+            .off('click mouseenter mouseleave')
+            // Mouseover (Hover an)
+            .on('mouseenter', () => {
+                tooltipContainer.css('background-color', 'var(--color-2-transparent)');
+            })
+            // Mouseout (Hover aus)
+            .on('mouseleave', () => {
+                tooltipContainer.css('background-color', 'var(--color-1-transparent)');
+            })
+            // Klick-Event
             .on('click', (e) => {
                 // Block link opening if this was a long press
                 if (window.isLongPressInProgress) {
