@@ -5,9 +5,9 @@ This script provides a logo for identified radio stations.
 ![image](https://github.com/user-attachments/assets/db9c267c-bf2b-45bd-9c99-d030a80e60f8)
 
 
-## v4.0a
+## v4.1
 
-- Minor design adjustments for desktop and mobile
+- Added a flip transition effect for frequency changes (toggleable in the script header)
 
 ## Installation notes:
 
@@ -25,7 +25,7 @@ The following variables can be changed in the header of the script:
     enableSearchLocal = false; 		    // Enable or disable searching local paths (.../web/logos)
     enableOnlineradioboxSearch = true; 	// Enable or disable onlineradiobox search if no local or server logo is found.
     updateLogoOnPiCodeChange = true; 	// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
-
+    enableLogoTransition = true;        // Enable or disable the flip transition animation when the logo changes.
 
 ## Important notes
 
@@ -44,6 +44,10 @@ If you have any questions, would like to report problems, or have suggestions fo
 
 <details>
 <summary>History</summary>
+
+### v4.0a
+
+- Minor design adjustments for desktop and mobile
 
 ### v4.0:
 

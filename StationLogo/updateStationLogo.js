@@ -1,7 +1,7 @@
 (() => {
 //////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                ///
-///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V4.0a)                        ///
+///  STATION LOGO INSERT SCRIPT FOR FM-DX-WEBSERVER (V4.1)                         ///
 ///                                                                                /// 
 ///  Thanks to Ivan_FL, Adam W, mc_popa, noobish & bjoernv for the ideas/design    /// 
 ///  and AmateurAudioDude for the code customizations!                             ///
@@ -14,6 +14,7 @@
 const enableSearchLocal = true; 			// Enable or disable searching local paths (.../web/logos)
 const enableOnlineradioboxSearch = false; 	// Enable or disable onlineradiobox search if no local or server logo is found.
 const updateLogoOnPiCodeChange = true; 		// Enable or disable updating the logo when the PI code changes on the current frequency. For Airspy and other SDR receivers, this function should be set to false.
+const enableLogoTransition = true;          // Enable or disable the flip transition animation when the logo changes.
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -29,7 +30,7 @@ window.forceImageReload = false; // Flag for Cache-Busting on Long Press
   
 // Define local version and Github settings
 
-const pluginVersion = '4.0a';
+const pluginVersion = '4.1';
 const pluginName = "Station Logo";
 const pluginHomepageUrl = "https://github.com/Highpoint2000/webserver-station-logos/releases";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/Highpoint2000/webserver-station-logos/main/StationLogo/updateStationLogo.js";
@@ -144,15 +145,13 @@ function checkUpdate(setupOnly, pluginName, urlUpdateLink, urlFetchLink) {
 
 if (CHECK_FOR_UPDATES) checkUpdate(pluginSetupOnlyNotify, pluginName, pluginHomepageUrl, pluginUpdateUrl);
 
-
 //////////////// Insert logo code for desktop devices ////////////////////////
 
 // Define the HTML code as a string for the logo container
 var LogoContainerHtml = '<div style="width: 5%;"></div> <!-- Spacer -->' +
     '<div class="panel-30 m-0 hide-phone" style="width: 48%" >' +
     '    <div id="logo-container-desktop" style="width: 215px; height: 60px; display: flex; justify-content: center; align-items: center; margin: auto;">' +
-    '        <img id="station-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-desktop" style="max-width: 140px; max-height: 100%; margin-top: 30px; display: block; cursor: pointer;">' +
-    '    </div>' +
+'        <img id="station-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC" alt="station-logo-desktop" style="max-width: 140px; max-height: 100%; margin-top: 30px; display: block; cursor: pointer;">' +    '    </div>' +
     '</div>';
 // Insert the new HTML code after the named <div>
 document.getElementById("ps-container").insertAdjacentHTML('afterend', LogoContainerHtml);
@@ -217,6 +216,71 @@ if (window.innerWidth < 768) {
     logoImage = $('#station-logo');
 }
 
+// ==========================================
+// LOGO FLIP TRANSITION (Only on change)
+// ==========================================
+function changeLogoWithFlip(newSrc, newAlt) {
+    // Avoid animation if the exact same logo is loaded again
+    if (logoImage.attr('src') === newSrc) return;
+
+    if (!enableLogoTransition) {
+        logoImage.attr('src', newSrc);
+        if (newAlt) logoImage.attr('alt', newAlt);
+        return;
+    }
+
+    // Preload the image to ensure it's fully downloaded before starting the animation
+    const tempImg = new Image();
+    
+    tempImg.onload = () => {
+        // 1. Rotate logo to 90 degrees (becomes a line / invisible)
+        logoImage.css({
+            'transition': 'transform 0.2s ease-in',
+            'transform': 'rotateY(90deg)'
+        });
+
+        // 2. Wait until the rotation is finished (200ms)
+        setTimeout(() => {
+            // Swap image source while it is invisible (now instantaneous because it's preloaded)
+            logoImage.attr('src', newSrc);
+            if (newAlt) logoImage.attr('alt', newAlt);
+
+            // 3. Jump to -90 degrees (without animation), 
+            // so it continues rotating from the other side
+            logoImage.css({
+                'transition': 'none',
+                'transform': 'rotateY(-90deg)'
+            });
+
+            // 4. Wait a few milliseconds so the browser registers the jump
+            setTimeout(() => {
+                // Rotate the new logo back to 0 degrees (fade in)
+                logoImage.css({
+                    'transition': 'transform 0.2s ease-out',
+                    'transform': 'rotateY(0deg)'
+                });
+                
+                // 5. Clean up CSS after the animation finishes
+                setTimeout(() => {
+                    logoImage.css({
+                        'transition': '',
+                        'transform': ''
+                    });
+                }, 200);
+            }, 30);
+        }, 200);
+    };
+
+    // Fallback: If the image fails to load for some reason, just set it directly to avoid getting stuck
+    tempImg.onerror = () => {
+        logoImage.attr('src', newSrc);
+        if (newAlt) logoImage.attr('alt', newAlt);
+    };
+
+    // Trigger the image download
+    tempImg.src = newSrc;
+}
+
 let currentFrequency = null;
 let logoLoadedForCurrentFrequency = false;
 let logoLoadingInProgress = false;
@@ -260,7 +324,7 @@ function forceLogoRefresh() {
         console.log(`[Force Refresh] Cleared session directory cache for ITU: ${ituCode}`);
     }
 
-    // 2. Clear 7-day logo URL cache (inklusive eventuellem "DEFAULT" Cache)
+    // 2. Clear 7-day logo URL cache (including eventual "DEFAULT" cache)
     if (piCode !== '?') {
         let formattedProgram = Program.toUpperCase().replace(/[\/\-\*\+\:\.\,\§\%\&\"!\?\|\>\<\=\)\(\[\]´`'~#\s]/g, '');
         let cleanPiCode = piCode.trim(); 
@@ -308,8 +372,8 @@ async function showDefaultLogo(frequency) {
         } catch(e) {}
     }
     
-    logoImage.attr('src', getBustedUrl(finalDefaultPath)).attr('alt', 'Default Logo').css('cursor', 'pointer'); // Pointer so long press works
-    
+    changeLogoWithFlip(getBustedUrl(finalDefaultPath), 'Default Logo'); logoImage.css('cursor', 'pointer');
+   
     if (frequency) defaultLogoLoadedForFrequency[frequency] = true;
     logoLoadedForCurrentFrequency = true;
     logoLoadingInProgress = false;
@@ -421,7 +485,7 @@ async function checkRemotePaths(Program, ituCode, piCode, frequency) {
                     return await showDefaultLogo(frequency);
                 } else if (cachedData.url) {
                     console.log(`[Logo Cache] Using 7-day cached URL: ${cachedData.url}`);
-                    logoImage.attr('src', getBustedUrl(cachedData.url)).attr('alt', 'Station Logo').css('cursor', 'pointer');
+                    changeLogoWithFlip(getBustedUrl(cachedData.url), 'Station Logo'); logoImage.css('cursor', 'pointer');
                     logoLoadedForCurrentFrequency = true;
                     return cachedData.url;
                 }
@@ -454,7 +518,7 @@ async function checkRemotePaths(Program, ituCode, piCode, frequency) {
                 
                 localStorage.setItem(logoUrlCacheKey, JSON.stringify({ timestamp: now, url: remotePath }));
 
-                logoImage.attr('src', getBustedUrl(remotePath)).attr('alt', 'Station Logo').css('cursor', 'pointer');
+                changeLogoWithFlip(getBustedUrl(remotePath), 'Station Logo'); logoImage.css('cursor', 'pointer');
                 logoLoadedForCurrentFrequency = true;
                 return remotePath; 
             }
@@ -504,7 +568,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
     if (!logoLoadedForCurrentFrequency || (updateLogoOnPiCodeChange && (piCode !== oldPiCode || ituCode !== oldItuCode || Program !== oldProgram))) {
         logoLoadingInProgress = true;
 
-        // ── NEU: Deadlock-Schutz – Flag nach max. 8s automatisch freigeben ──
+        // ── NEW: Deadlock protection - automatically release flag after max. 8s ──
         const loadingGuard = setTimeout(() => {
             if (logoLoadingInProgress) {
                 console.warn('[Station Logo] logoLoadingInProgress Timeout – resetting flag');
@@ -535,7 +599,7 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
                     }
 
                     if (localFoundPath) {
-                        logoImage.attr('src', getBustedUrl(localFoundPath)).attr('alt', `Logo for station ${cleanPiCode}`).css('display', 'block');
+                        changeLogoWithFlip(getBustedUrl(localFoundPath), `Logo for station ${cleanPiCode}`); logoImage.css('display', 'block');
                         console.log(`[Local Search] Found local logo: ${localFoundPath}`);
                         if (Program !== oldProgram) LogoSearch(cleanPiCode, ituCode, Program);
                         logoLoadedForCurrentFrequency = true;
@@ -546,9 +610,9 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
                             const remoteLogo = await checkRemotePaths(Program, ituCode, cleanPiCode, frequency);
                             if (remoteLogo && remoteLogo !== "DEFAULT") {
                                 if (Program !== oldProgram) LogoSearch(cleanPiCode, ituCode, Program);
-                                logoLoadingInProgress = false; // ← war schon vorhanden
+                                logoLoadingInProgress = false; // ← was already there
                             }
-                            // ── NEU: auch bei null/DEFAULT Flag freigeben ──
+                            // ── NEW: also release flag on null/DEFAULT ──
                             else {
                                 logoLoadingInProgress = false;
                             }
@@ -560,9 +624,9 @@ function updateStationLogo(piCode, ituCode, Program, frequency) {
                     await showDefaultLogo(frequency);
                 }
             } finally {
-                // ── NEU: Guard immer canceln wenn async-Block fertig ──
+                // ── NEW: Always cancel guard when async block is finished ──
                 clearTimeout(loadingGuard);
-                // Sicherstellen dass Flag am Ende immer freigegeben wird
+                // Ensure flag is always released at the end
                 if (logoLoadingInProgress) logoLoadingInProgress = false;
             }
         })();
@@ -621,7 +685,7 @@ function onSocketError() {
     setTimeout(connectWebSocket_StationLogo, 10000);
 }
 
-// ── Debounce-Schutz gegen transiente pi='?' vom RDS AI Decoder ──
+// ── Debounce protection against transient pi='?' from RDS AI Decoder ──
 let _pendingDefaultTimer = null;
 
 function handleStationLogoUpdate(event) {
@@ -637,19 +701,19 @@ function handleStationLogoUpdate(event) {
         const frequenz = data.freq;
         const psCode   = data.ps;
 
-        // ── NEU: Transiente Zwischenzustände vom RDS AI Decoder abfangen ──
-        // pi='?' bei unveränderter Frequenz = kurzer Übergangszustand, kein echter Kanalwechsel
+        // ── NEW: Catch transient intermediate states from RDS AI Decoder ──
+        // pi='?' on unchanged frequency = short transition state, no real channel change
         const freqChanged  = frequenz !== lastLogoState.frequenz;
         const piIsInvalid  = !piCode || piCode === '?' || piCode.includes('?');
         const psIsEmpty    = !psCode || psCode.trim() === '';
 
         if (piIsInvalid && !freqChanged && psIsEmpty) {
-            // Könnte ein transientes '?' vom RDS AI Decoder sein.
-            // 600ms warten – kommt danach ein echter PI, wird dieser verwendet.
+            // Could be a transient '?' from the RDS AI Decoder.
+            // Wait 600ms - if a real PI comes after, it will be used.
             if (_pendingDefaultTimer) clearTimeout(_pendingDefaultTimer);
             _pendingDefaultTimer = setTimeout(() => {
                 _pendingDefaultTimer = null;
-                // Nur Default laden wenn immer noch kein gültiger PI da ist
+                // Only load default if there is still no valid PI
                 if (lastLogoState.piCode && lastLogoState.piCode !== '?') return;
                 updateStationLogo(piCode, ituCode, Program, frequenz);
                 lastLogoState = { piCode, ituCode, Program, frequenz, psCode };
@@ -657,7 +721,7 @@ function handleStationLogoUpdate(event) {
             return;
         }
 
-        // Echten PI sofort verarbeiten – pending Default abbrechen
+        // Process real PI immediately - abort pending default
         if (!piIsInvalid && _pendingDefaultTimer) {
             clearTimeout(_pendingDefaultTimer);
             _pendingDefaultTimer = null;
@@ -669,7 +733,7 @@ function handleStationLogoUpdate(event) {
             ituCode !== lastLogoState.ituCode ||
             Program !== lastLogoState.Program ||
             frequenz !== lastLogoState.frequenz
-            // ── psCode ENTFERNT – PS-Änderungen sollen kein Logo-Reload auslösen ──
+            // ── psCode REMOVED - PS changes should not trigger a logo reload ──
         )
     ) {
         updateStationLogo(piCode, ituCode, Program, frequenz);
@@ -696,22 +760,22 @@ function LogoSearch(piCode, ituCode, Program) {
         console.log("Search query:", searchQuery);
 
         tooltipContainer
-            // Setze die Standardfarbe und (optional) eine weiche Animation
+            // Set the default color and (optional) a soft animation
             .css({
                 'background-color': 'var(--color-1-transparent)',
                 'transition': 'background-color 0.2s ease-in-out' 
             })
-            // Vorherige Events entfernen, um Mehrfachausführungen zu verhindern
+            // Remove previous events to prevent multiple executions
             .off('click mouseenter mouseleave')
-            // Mouseover (Hover an)
+            // Mouseover (Hover on)
             .on('mouseenter', () => {
                 tooltipContainer.css('background-color', 'var(--color-2-transparent)');
             })
-            // Mouseout (Hover aus)
+            // Mouseout (Hover off)
             .on('mouseleave', () => {
                 tooltipContainer.css('background-color', 'var(--color-1-transparent)');
             })
-            // Klick-Event
+            // Click event
             .on('click', (e) => {
                 // Block link opening if this was a long press
                 if (window.isLongPressInProgress) {
@@ -789,7 +853,7 @@ async function parsePage(url, Program_original, ituCode, piCode, cacheKey) {
             // Cache successful ORB finding
             if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), url: selectedImgSrc }));
             
-            logoImage.attr('src', getBustedUrl(selectedImgSrc)).attr('alt', `Logo for station ${piCode}`).css('cursor', 'pointer');
+            changeLogoWithFlip(getBustedUrl(selectedImgSrc), `Logo for station ${piCode}`); logoImage.css('cursor', 'pointer');
             LogoSearch(piCode, ituCode, Program_original);  
         } else {
             throw new Error("No logo found on OnlineRadioBox");
