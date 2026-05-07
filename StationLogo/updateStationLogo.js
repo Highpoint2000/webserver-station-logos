@@ -391,7 +391,16 @@ async function checkLocalPaths(cleanPiCode, formattedProgram) {
 
     for (const fileName of priorityFiles) {
         try {
-            const response = await fetch(`${localpath}${fileName}`, { method: 'HEAD' });
+            let fetchUrl = `${localpath}${fileName}`;
+            let fetchOptions = { method: 'HEAD' };
+
+            // Bypass browser HTTP cache if a long-press refresh is active
+            if (window.forceImageReload) {
+                fetchUrl += `?cb=${Date.now()}`;
+                fetchOptions.cache = 'no-store';
+            }
+
+            const response = await fetch(fetchUrl, fetchOptions);
             if (response.ok) {
                 return `${localpath}${fileName}`;
             }
@@ -434,7 +443,16 @@ async function getRemoteDirectoryIndex(ituCode) {
 
     // Fetch the directory listing from the server
     try {
-        const response = await fetch(`${serverpath}${ituCode}/`);
+        let fetchUrl = `${serverpath}${ituCode}/`;
+        let fetchOptions = {};
+        
+        // Bypass browser HTTP cache if a long-press refresh is active
+        if (window.forceImageReload) {
+            fetchUrl += `?cb=${Date.now()}`;
+            fetchOptions.cache = 'no-store';
+        }
+
+        const response = await fetch(fetchUrl, fetchOptions);
         if (!response.ok) {
             console.warn(`[Remote Directory] Failed to fetch directory for ${ituCode}`);
             return [];
